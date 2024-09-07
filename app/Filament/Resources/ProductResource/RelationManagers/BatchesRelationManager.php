@@ -26,7 +26,8 @@ class BatchesRelationManager extends RelationManager
 
                 // Forms\Components\Select::make('product_id')
                 //     ->relationship('product', 'name')
-                //     ->required(),
+                //     ->required(),.
+                
 
                 Forms\Components\DatePicker::make('expiry_date')
                     ->required(),

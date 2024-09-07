@@ -33,7 +33,7 @@ class SalesResource extends Resource
             ->columns([
                 //
             ])
-            ->filters([
+            ->filters([ 
                 //
             ])
             ->actions([
