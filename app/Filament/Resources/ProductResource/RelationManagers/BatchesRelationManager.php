@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ProductResource\RelationManagers;
 
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
@@ -27,7 +28,7 @@ class BatchesRelationManager extends RelationManager
                 // Forms\Components\Select::make('product_id')
                 //     ->relationship('product', 'name')
                 //     ->required(),.
-                
+
 
                 Forms\Components\DatePicker::make('expiry_date')
                     ->required(),
@@ -43,9 +44,19 @@ class BatchesRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('batch_id')
             ->columns([
-                Tables\Columns\TextColumn::make('batch_id'),
+                TextColumn::make('batch_id'),
                 TextColumn::make('expiry_date'),
+                TextColumn::make('item_count'),
                 TextColumn::make('item_count')
+                    ->label('Item Count')
+                    ->color(fn(int $state): string => $state > 0 ? 'white' : 'danger') // Set color based on item count
+                    ->formatStateUsing(fn(int $state): string => number_format($state)),
+
+
+                TextColumn::make('expiry_date')
+                    ->label('Expiry Date')
+                    ->color(fn(string $state): string => Carbon::parse($state)->isPast() ? 'danger' : 'white') // Set color based on expiry date
+                    ->formatStateUsing(fn(string $state): string => Carbon::parse($state)->toDateString()),
             ])
             ->filters([
                 //
