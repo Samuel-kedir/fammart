@@ -29,3 +29,22 @@ class Batch extends Model
          });
      }
 }
+
+// Receipt
+// id
+// Total Price
+// payment Method
+
+
+// Sales
+// id
+// batch_id
+// quantity
+// price
+// receipt_id (foreign_id)
+
+
+
+
+
+

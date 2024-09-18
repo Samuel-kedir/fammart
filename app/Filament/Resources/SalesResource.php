@@ -3,15 +3,16 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SalesResource\Pages;
-use App\Filament\Resources\SalesResource\RelationManagers;
+use App\Models\Batch;
 use App\Models\Sales;
 use Filament\Forms;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class SalesResource extends Resource
 {
@@ -23,7 +24,60 @@ class SalesResource extends Resource
     {
         return $form
             ->schema([
-                //
+                Repeater::make('sales')
+                    ->schema([
+                        Select::make('batch_id')
+                            ->relationship('batch', 'batch_id')
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->reactive()
+                            ->afterStateUpdated(function (callable $set, $state, $get) {
+                                $batch = Batch::find($state);
+                                if ($batch) {
+                                    $price = $batch->product->price;
+                                    $set('price', $price);
+                                    $quantitySold = $get('quantity_sold');
+                                    $set('total', ($quantitySold ? $quantitySold : 0) * $price);
+                                }
+                            })
+                            ->label('Batch ID'),
+
+                            TextInput::make('quantity_sold')
+                            ->numeric()
+                            ->required()
+                            ->reactive()
+                            ->default(1) // Set default value to 1
+                            ->label('Quantity Sold')
+                            ->afterStateUpdated(function (callable $set, callable $get, $state) {
+                                $price = $get('price');
+                                // Only update total if both quantity and price are set
+                                if ($price !== null && is_numeric($state)) {
+                                    $set('total', $state * $price);
+                                }
+                            }),
+
+                        TextInput::make('price')
+                            ->label('Price')
+                            ->disabled() // Automatically filled from product
+                            ->required()
+                            ->reactive()
+                            ->afterStateUpdated(function (callable $set, callable $get, $state) {
+                                $quantity = $get('quantity_sold');
+                                // Only update total if both quantity and price are set
+                                if ($quantity !== null && is_numeric($state)) {
+                                    $set('total', $quantity * $state);
+                                }
+                            }),
+                        TextInput::make('total')
+                            ->label('Total')
+                            ->disabled() // Disable input as it's auto-calculated
+                    ])
+                    ->columns(4) // Full width
+                    ->addActionLabel('Add Product Sale')
+                    ->minItems(1)
+                    ->label('Sales')
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -31,9 +85,9 @@ class SalesResource extends Resource
     {
         return $table
             ->columns([
-                //
+                // Define table columns here if necessary
             ])
-            ->filters([ 
+            ->filters([
                 //
             ])
             ->actions([
@@ -43,15 +97,7 @@ class SalesResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-
             ]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
     }
 
     public static function getPages(): array
