@@ -112,18 +112,23 @@ class SalesResource extends Resource
     }
 
 
-    protected static function mutateFormDataBeforeCreate(array $data): array
+    public static function handleRecordCreation(array $data): array
     {
-        // Dump the form data to check if 'batch_id' is present
-        dd($data);
+        // Ensure that 'sales' key contains data from the repeater
+        if (isset($data['sales']) && is_array($data['sales'])) {
+            foreach ($data['sales'] as $sale) {
+                Sales::create([
+                    'batch_id' => $sale['batch_id'],
+                    'quantity' => $sale['quantity'],
+                    'unit_price' => $sale['unit_price'],
+                    'total' => $sale['total'],
+                    'payment_method' => $data['payment_method'], // Assuming you have a single payment method for all entries
+                ]);
+            }
+        }
 
-        return $data;
-    }
-
-    protected static function mutateFormDataBeforeUpdate(array $data): array
-    {
-        // Dump the form data before update
-        dd($data);
+        // Remove 'sales' key if you don't want to save it in the main table
+        unset($data['sales']);
 
         return $data;
     }
