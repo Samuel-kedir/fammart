@@ -43,17 +43,21 @@ class SalesResource extends Resource
                             })
                             ->label('Batch ID'),
 
-                            TextInput::make('quantity_sold')
+                        TextInput::make('quantity_sold')
                             ->numeric()
                             ->required()
                             ->reactive()
+                            ->debounce(1000)
+                            ->minValue(1)
                             ->default(1) // Set default value to 1
                             ->label('Quantity Sold')
                             ->afterStateUpdated(function (callable $set, callable $get, $state) {
                                 $price = $get('price');
                                 // Only update total if both quantity and price are set
                                 if ($price !== null && is_numeric($state)) {
-                                    $set('total', $state * $price);
+                                    $totalPrice = $price * (int)$state;
+
+                                    $set('total', $totalPrice);
                                 }
                             }),
 
@@ -61,14 +65,8 @@ class SalesResource extends Resource
                             ->label('Price')
                             ->disabled() // Automatically filled from product
                             ->required()
-                            ->reactive()
-                            ->afterStateUpdated(function (callable $set, callable $get, $state) {
-                                $quantity = $get('quantity_sold');
-                                // Only update total if both quantity and price are set
-                                if ($quantity !== null && is_numeric($state)) {
-                                    $set('total', $quantity * $state);
-                                }
-                            }),
+                            ->reactive(),
+
                         TextInput::make('total')
                             ->label('Total')
                             ->disabled() // Disable input as it's auto-calculated
