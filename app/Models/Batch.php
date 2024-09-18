@@ -17,34 +17,20 @@ class Batch extends Model
         return $this->belongsTo(Product::class);
     }
 
-     // Automatically generate batch ID when creating a new batch
-     public static function boot()
-     {
-         parent::boot();
+    public function sales()
+    {
+        return $this->hasMany(Sales::class, 'batch_id');
+    }
 
-         static::creating(function ($batch) {
-             if (empty($batch->batch_id)) {
-                 $batch->batch_id = Str::random(4); // Generates a 4-character alphanumeric string
-             }
-         });
-     }
+    // Automatically generate batch ID when creating a new batch
+    public static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($batch) {
+            if (empty($batch->batch_id)) {
+                $batch->batch_id = Str::random(4); // Generates a 4-character alphanumeric string
+            }
+        });
+    }
 }
-
-// Receipt
-// id
-// Total Price
-// payment Method
-
-
-// Sales
-// id
-// batch_id
-// quantity
-// price
-// receipt_id (foreign_id)
-
-
-
-
-
-

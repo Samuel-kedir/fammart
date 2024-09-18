@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Sales extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'batch_id',
         'quantity',
@@ -18,6 +19,6 @@ class Sales extends Model
 
     public function batch()
     {
-        return $this->belongsTo(Batch::class);
+        return $this->belongsTo(Batch::class, 'batch_id', 'id');
     }
 }

@@ -13,6 +13,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Symfony\Component\Console\Input\Input;
 
 class SalesResource extends Resource
 {
@@ -24,26 +25,29 @@ class SalesResource extends Resource
     {
         return $form
             ->schema([
-                Repeater::make('sales')
+                Repeater::make("sales")
                     ->schema([
                         Select::make('batch_id')
-                            ->relationship('batch', 'batch_id')
+                            // ->relationship('batch', 'batch_id')
+                            ->options(Batch::all()->pluck('batch_id', 'id'))
                             ->searchable()
                             ->preload()
                             ->required()
                             ->reactive()
                             ->afterStateUpdated(function (callable $set, $state, $get) {
                                 $batch = Batch::find($state);
+                                logger($batch);
                                 if ($batch) {
                                     $price = $batch->product->price;
-                                    $set('price', $price);
-                                    $quantitySold = $get('quantity_sold');
+                                    $set('unit_price', $price);
+                                    $quantitySold = $get('quantity');
                                     $set('total', ($quantitySold ? $quantitySold : 0) * $price);
                                 }
                             })
-                            ->label('Batch ID'),
+                            ->label('Batch ID')
+                            ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
 
-                        TextInput::make('quantity_sold')
+                        TextInput::make('quantity')
                             ->numeric()
                             ->required()
                             ->reactive()
@@ -52,7 +56,7 @@ class SalesResource extends Resource
                             ->default(1) // Set default value to 1
                             ->label('Quantity Sold')
                             ->afterStateUpdated(function (callable $set, callable $get, $state) {
-                                $price = $get('price');
+                                $price = $get('unit_price');
                                 // Only update total if both quantity and price are set
                                 if ($price !== null && is_numeric($state)) {
                                     $totalPrice = $price * (int)$state;
@@ -61,15 +65,15 @@ class SalesResource extends Resource
                                 }
                             }),
 
-                        TextInput::make('price')
+                        TextInput::make('unit_price')
                             ->label('Price')
-                            ->disabled() // Automatically filled from product
+                            ->readOnly() // Automatically filled from product
                             ->required()
                             ->reactive(),
 
                         TextInput::make('total')
                             ->label('Total')
-                            ->disabled() // Disable input as it's auto-calculated
+                            ->readOnly() // Disable input as it's auto-calculated
                     ])
                     ->columns(4) // Full width
                     ->addActionLabel('Add Product Sale')
@@ -105,5 +109,22 @@ class SalesResource extends Resource
             'create' => Pages\CreateSales::route('/create'),
             'edit' => Pages\EditSales::route('/{record}/edit'),
         ];
+    }
+
+
+    protected static function mutateFormDataBeforeCreate(array $data): array
+    {
+        // Dump the form data to check if 'batch_id' is present
+        dd($data);
+
+        return $data;
+    }
+
+    protected static function mutateFormDataBeforeUpdate(array $data): array
+    {
+        // Dump the form data before update
+        dd($data);
+
+        return $data;
     }
 }
