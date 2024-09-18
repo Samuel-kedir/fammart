@@ -43,6 +43,7 @@ class OrdersResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name'),
+                TextColumn::make('total_price'),
                 TextColumn::make('created_at')
                     ->getStateUsing(function ($record) {
                         return Carbon::parse($record->created_at)->diffForHumans();

@@ -15,6 +15,8 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->string('name')->default(Carbon::now());
+            $table->decimal('total_price')->default(0);
+            $table->string('payment_method')->nullable();
             $table->timestamps();
         });
     }
