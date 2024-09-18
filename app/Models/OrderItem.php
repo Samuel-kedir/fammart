@@ -14,10 +14,12 @@ class OrderItem extends Model
     {
         static::saved(function (OrderItem $orderItem) {
             $orderItem->updateOrderTotal();
+            $orderItem->deductProduct($orderItem);
         });
 
         static::deleted(function (OrderItem $orderItem) {
             $orderItem->updateOrderTotal();
+            $orderItem->deductProduct($orderItem);
         });
     }
 
@@ -29,6 +31,17 @@ class OrderItem extends Model
             // Sum the total prices of all related order items
             $totalPrice = $order->items()->sum('total');
             $order->update(['total_price' => $totalPrice]);
+        }
+    }
+
+    public function deductProduct($orderItem)
+    {
+        $batch = $this->batch;
+
+        if ($batch && $batch->item_count > 0) {
+
+            $item_count = $batch->item_count - $orderItem->quantity;
+            $batch->update(["item_count" => $item_count]);
         }
     }
 

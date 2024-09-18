@@ -35,8 +35,10 @@ class ItemsRelationManager extends RelationManager
                         if ($batch) {
                             $price = $batch->product->price;
                             $product_name = $batch->product->name;
+                            $remaining_quantity = $batch->item_count;
                             $set('unit_price', $price);
                             $set('name', $product_name);
+                            $set('remaining_quantity', $remaining_quantity);
                             $quantitySold = $get('quantity');
                             $set('total', ($quantitySold ? $quantitySold : 0) * $price);
                         }
@@ -46,6 +48,13 @@ class ItemsRelationManager extends RelationManager
 
                 TextInput::make('name')
                     ->label('Name')
+                    ->disabled()
+                    ->dehydrated(false) // Automatically filled from product
+                    ->required()
+                    ->reactive(),
+
+                TextInput::make('remaining_quantity')
+                    ->label('Remaining Quantity')
                     ->disabled()
                     ->dehydrated(false) // Automatically filled from product
                     ->required()
