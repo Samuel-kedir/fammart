@@ -33,8 +33,7 @@ class OrdersResource extends Resource
     {
         return $form
             ->schema([
-                TextInput::make('name')
-                    ->label('Give order title'),
+
             ]);
     }
 

@@ -71,6 +71,8 @@ class SalesResource extends Resource
                             ->required()
                             ->reactive(),
 
+
+
                         TextInput::make('total')
                             ->label('Total')
                             ->readOnly() // Disable input as it's auto-calculated
