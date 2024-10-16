@@ -10,11 +10,13 @@ class Sales extends Model
     use HasFactory;
 
     protected $fillable = [
-        'batch_id',
-        'quantity',
-        'unit_price',
-        'total',
+        'sum_total',
         'payment_method',
+        'items'
+    ];
+
+    protected $casts = [
+        'items'=>'json'
     ];
 
     public function batch()

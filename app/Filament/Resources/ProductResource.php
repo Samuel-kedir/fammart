@@ -35,18 +35,21 @@ class ProductResource extends Resource
     {
         return $form
     ->schema([
-        TextInput::make('name')->required(),
-        Select::make('category_id')
-            ->relationship('category', 'name')
-            ->createOptionForm([
-                TextInput::make('name')->required(),
-            ])
-            ->required(),
+
+        // Select::make('category_id')
+        //     ->relationship('category', 'name')
+        //     ->createOptionForm([
+        //         TextInput::make('name')->required(),
+        //     ])
+        //     ->required(),
         Grid::make(12)
             ->schema([
+                TextInput::make('name')->required()
+                ->columnSpan(4),
                 TextInput::make('size_value')
                     ->label('Size Value')
                     ->numeric()
+                    ->placeholder('eg. 250 ml')
                     ->required()
                     ->columnSpan(3),
                 Select::make('size_unit')
@@ -56,85 +59,52 @@ class ProductResource extends Resource
                         'g' => 'Gram',
                         'lb' => 'Pound',
                         'oz' => 'Ounce',
+                        'st' => 'Stone',
+                        'mg' => 'Milligram',
+                        't' => 'Ton',
+                        'metric_ton' => 'Metric Ton',
+                        'l' => 'Liter',
+                        'ml' => 'Milliliter',
+                        'gal' => 'Gallon',
+                        'qt' => 'Quart',
+                        'pt' => 'Pint',
+                        'fl_oz' => 'Fluid Ounce',
+                        'm' => 'Meter',
+                        'cm' => 'Centimeter',
+                        'mm' => 'Millimeter',
+                        'km' => 'Kilometer',
+                        'in' => 'Inch',
+                        'ft' => 'Foot',
+                        'yd' => 'Yard',
+                        'mile' => 'Mile',
+                        'sq_m' => 'Square Meter',
+                        'sq_cm' => 'Square Centimeter',
+                        'sq_km' => 'Square Kilometer',
+                        'ha' => 'Hectare',
+                        'ac' => 'Acre',
+                        'sq_in' => 'Square Inch',
+                        'sq_ft' => 'Square Foot',
+                        'sq_yd' => 'Square Yard',
+                        'count' => 'Count',
+                        'bundle' => 'Bundle',
+                        'dozen' => 'Dozen',
+                        'piece' => 'Piece',
+                        'set' => 'Set',
+                        'stick'=>'Stick'
                     ])
+                    ->placeholder('size')
+                    ->searchable()
                     ->required()
-                    ->columnSpan(3)
-                    ->extraAttributes(['style' => 'text-align: right; width: 100%; margin-right:100px ']),
+                    ->columnSpan(2)
+                    ->extraAttributes(['style' => 'text-align: left; width: 100%; margin-right:100px ']),
                 TextInput::make('price')->required()->numeric()
-                    ->columnSpan(6)
+                    ->columnSpan(3)
                     ->prefix('ETB')
                     ->extraAttributes(['style' => 'text-align: right; width: 100%;']),
             ])
             ->extraAttributes(['style' => 'display: flex; gap: 10px; align-items: center; justify-content: space-between']),
         Textarea::make('description'),
-        TextInput::make('sum_total')
-            ->label('Sum Total')
-            ->readOnly(),
-        Repeater::make('items')
-            ->schema([
-                Select::make('batch_id')
-                    ->options(Batch::all()->pluck('batch_id', 'id'))
-                    ->searchable()
-                    ->preload()
-                    ->required()
-                    ->reactive()
-                    ->afterStateUpdated(function (callable $set, $state, $get) {
-                        $batch = Batch::find($state);
-                        if ($batch) {
-                            $price = $batch->product->price;
-                            $set('unit_price', $price);
-                            $quantitySold = $get('quantity');
-                            $set('total', ($quantitySold ? $quantitySold : 0) * $price);
-                        }
-                    })
-                    ->label('Batch ID')
-                    ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
-                    TextInput::make('quantity')
-                    ->numeric()
-                    ->required()
-                    ->reactive()
-                    ->debounce(500) // Adding debounce for smoother real-time updates
-                    ->minValue(1)
-                    ->default(1)
-                    ->label('Quantity Sold')
-                    ->afterStateUpdated(function (callable $set, callable $get, $state) {
-                        $price = $get('unit_price');
-                        if ($price !== null && is_numeric($state)) {
-                            $totalPrice = $price * (int)$state;
-                            $set('total', $totalPrice);
-                        }
-
-                        // Move this calculation outside of the quantity update:
-                        // The total will update as soon as other fields are updated
-                        $items = $get('items') ?? []; // Ensure $items is an array
-                        $sumTotal = 0;
-                        foreach ($items as $item) {
-                            $sumTotal += $item['total'] ?? 0;
-                        }
-                        $set('sum_total', $sumTotal);
-                    }),
-
-                TextInput::make('unit_price')
-                    ->label('Price')
-                    ->readOnly()
-                    ->required()
-                    ->reactive(),
-                TextInput::make('total')
-                    ->label('Total')
-                    ->readOnly(),
-            ])
-            ->afterStateUpdated(function (callable $set, callable $get) {
-                $items = $get('items') ?? []; // Ensure $items is at least an empty array
-                $sumTotal = 0;
-                if (is_array($items)) {
-                    foreach ($items as $item) {
-                        $sumTotal += $item['total'] ?? 0;
-                    }
-                }
-                $set('sum_total', $sumTotal);
-            }),
-
-    ]);
+        ]);
 
 
     }

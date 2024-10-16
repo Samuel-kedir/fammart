@@ -13,11 +13,9 @@ return new class extends Migration
     {
         Schema::create('sales', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('batch_id')->constrained('batches', 'id')->onDelete('cascade');
-            $table->integer('quantity');
-            $table->decimal('unit_price', 8, 2);
-            $table->decimal('total', 10, 2);
-            $table->enum('payment_method', ['cash', 'bank_transfer']);
+            $table->decimal('sum_total', 10, 2);
+            $table->enum('payment_method', ['cash', 'bank_transfer','pos']);
+            $table->JSON('items')->nullable();
             $table->timestamps();
         });
     }

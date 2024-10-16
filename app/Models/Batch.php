@@ -29,7 +29,16 @@ class Batch extends Model
 
         static::creating(function ($batch) {
             if (empty($batch->batch_id)) {
-                $batch->batch_id = Str::random(4); // Generates a 4-character alphanumeric string
+                // Get the product ID
+                $product = Product::find($batch->product_id);
+
+                if ($product) {
+                    // Get the count of existing batches for this product
+                    $batchCount = $product->batches()->count() + 1; // Start from 1
+
+                    // Generate the batch ID in the format product_id-batch_number
+                    $batch->batch_id = sprintf('%02d-%02d', $product->id, $batchCount);
+                }
             }
         });
     }
