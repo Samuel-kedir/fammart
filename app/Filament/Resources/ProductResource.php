@@ -120,7 +120,6 @@ class ProductResource extends Resource
                 ->sortable()
                 ->searchable(),
                 TextColumn::make('price'),
-                TextColumn::make('category.name'),
             ])
             ->filters([
                 //
