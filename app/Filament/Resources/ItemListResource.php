@@ -33,6 +33,8 @@ class ItemListResource extends Resource
 
     protected static ?string $title = 'Item List';
 
+    protected static ?string $label = 'Item List';
+
 
     public static function form(Form $form): Form
     {

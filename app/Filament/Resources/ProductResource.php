@@ -66,9 +66,8 @@ class ProductResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name'),
-                TextColumn::make('size_value')
+                TextColumn::make('size')
                 ->label('Size')
-                ->formatStateUsing(fn ($state, $record) => $record->size_value . ' ' . $record->size_unit)
                 ->sortable()
                 ->searchable(),
                 TextColumn::make('price'),
