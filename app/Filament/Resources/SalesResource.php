@@ -3,179 +3,128 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SalesResource\Pages;
-use App\Models\Batch;
+use App\Models\Product;
 use App\Models\Sales;
-use Carbon\Carbon;
-use Filament\Actions\Action;
-use Filament\Actions\StaticAction;
-use Filament\Facades\Filament;
 use Filament\Forms;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
-use Filament\Navigation\NavigationItem;
-use Filament\Notifications\Notification;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Actions\ButtonAction;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Validation\ValidationException;
-use Symfony\Component\Console\Input\Input;
 
 class SalesResource extends Resource
 {
     protected static ?string $model = Sales::class;
-
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
     {
-        return $form->schema([
-            TextInput::make('sum_total')->label('Sum Total')->readOnly()->default(0),
-
-            Grid::make(1)->schema([
-                Repeater::make('items')
+        return $form
+            ->schema([
+                Repeater::make('saleItems')
+                    ->live()
                     ->schema([
-                        Grid::make(4)->schema([
-                            Select::make('batch_id')
-                                ->options(Batch::all()->pluck('batch_id', 'id'))
-                                ->searchable()
-                                ->preload()
-                                ->required()
-                                ->reactive()
-                                ->afterStateUpdated(function (callable $set, $state, $get) {
-                                    $batch = Batch::find($state);
-                                    if ($batch) {
-                                        $price = $batch->product->price;
-                                        $set('unit_price', $price);
-                                        $quantitySold = $get('quantity');
-                                        $set('total', ($quantitySold ? $quantitySold : 0) * $price);
-                                    }
-                                })
-                                ->label('Batch ID')
-                                ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                        Select::make('product_id')
+                            ->label('Product')
+                            ->options(Product::all()->pluck('name', 'id'))
+                            ->searchable()
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set, $get) {
+                                $product = Product::find($state);
+                                $price = $product ? $product->price : 0;
+                                $set('price', $price);
+                                $quantity = $get('quantity') ?? 0;
+                                $itemTotal = $price * $quantity;
+                                $set('item_total', $itemTotal);
+                                // self::setOverallPrice($set, $get);
+                            })
+                            ->required(),
 
-                            TextInput::make('quantity')
-                                ->numeric()
-                                ->required()
-                                ->reactive()
-                                ->debounce(500)
-                                ->minValue(1)
-                                ->default(1)
-                                ->label('Quantity Sold')
-                                ->afterStateUpdated(function (callable $set, callable $get, $state) {
-                                    $price = $get('unit_price');
-                                    if ($price !== null && is_numeric($state)) {
-                                        $totalPrice = $price * (int) $state;
-                                        $set('total', $totalPrice);
-                                    }
+                        TextInput::make('price')
+                            ->label('Price')
+                            ->numeric()
+                            ->disabled()
+                            ->required(),
 
-                                    // Update sum_total
-                                    $items = $get('items') ?? [];
-                                    $sumTotal = 0;
-                                    foreach ($items as $item) {
-                                        $sumTotal += $item['total'] ?? 0;
-                                    }
-                                    $set('sum_total', $sumTotal);
-                                }),
+                        TextInput::make('quantity')
+                            ->label('Quantity')
+                            ->numeric()
+                            ->required()
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set, $get) {
+                                $price = $get('price');
+                                $itemTotal = $price * $state;
+                                $set('item_total', $itemTotal);
+                                // self::setOverallPrice($get, $set);
+                            }),
 
-                            TextInput::make('unit_price')->label('Price')->readOnly()->required()->reactive(),
-
-                            TextInput::make('total')->label('Total')->readOnly(),
-                        ]),
+                        TextInput::make('item_total')
+                            ->label('Item Total')
+                            ->numeric()
+                            ->disabled()
+                            ->required(),
                     ])
-                    ->afterStateUpdated(function (callable $set, callable $get) {
-                        $items = $get('items') ?? [];
-                        $sumTotal = 0;
-                        if (is_array($items)) {
-                            foreach ($items as $item) {
-                                $sumTotal += $item['total'] ?? 0;
-                            }
-                        }
-                        $set('sum_total', $sumTotal);
+                    ->columns(4)
+                    ->afterStateUpdated(function (Get $get, Set $set){
+                        self::setOverallPrice($get, $set);
                     }),
 
-                Grid::make(2)->schema([
-                    // Adding sum total field at the end of the repeater
-
-                    // Adding payment fields
-                    Select::make('payment_method')
-                        ->label('Payment Method')
-                        ->options([
-                            'cash' => 'Cash',
-                            'bank_transfer' => 'Bank Deposit',
-                            'pos' => 'POS',
-                        ])
-                        ->required(),
-                ]),
-
-                // TextInput::make('tax')
-                //     ->label('Tax (%)')
-                //     ->numeric()
-                //     ->default(0),
-
-                // TextInput::make('discount')
-                //     ->label('Discount (%)')
-                //     ->numeric()
-                //     ->default(0),
-
-                // TextInput::make('additional_fees')
-                //     ->label('Additional Fees (%)')
-                //     ->numeric()
-                //     ->default(0),
-
-                // Adding a finalize sale button
-            ]),
-        ]);
+                TextInput::make('overall_price')
+                    ->label('Total Price')
+                    ->numeric()
+                    ->disabled()
+                    ->default(0)
+                    ->reactive(),
+            ]);
     }
 
-    public static function finalizeSale(array $data)
+    // Helper function to set overall price
+    private static function setOverallPrice(Get $get, Set $set): void
     {
-        $sumTotal = 0;
+        // $overallPrice = collect($get('saleItems'))->sum(fn($item) => $item['item_total'] ?? 0);
+        // $set('overall_price', $overallPrice);
 
-        // Validate and process the sale
-        foreach ($data['items'] as $item) {
-            $batch = Batch::find($item['batch_id']);
-            if ($batch->item_count < $item['quantity']) {
-                throw ValidationException::withMessages([
-                    'quantity' => 'Quantity exceeds available stock for batch ' . $batch->batch_id,
-                ]);
-            }
+        // Retrieve all selected products and remove empty rows
+        $selectedProducts = collect($get('saleItems'))->filter(fn($item) => !empty($item['product_id']) && !empty($item['quantity']));
+    
+        // Retrieve prices for all selected products
+        $prices = Product::find($selectedProducts->pluck('product_id'))->pluck('price', 'id');
+    
+        // Calculate subtotal based on the selected products and quantities
+        $subtotal = $selectedProducts->reduce(function ($subtotal, $product) use ($prices) {
+            return $subtotal + ($prices[$product['product_id']] * $product['quantity']);
+        }, 0);
+    
+        // Update the state with the new values
+        $set('overall_price', number_format($subtotal, 2, '.', ''));
+        // $set('total', number_format($subtotal + ($subtotal * ($get('taxes') / 100)), 2, '.', ''));
 
-            // Deduct the stock from the batch
-            $batch->decrement('item_count', $item['quantity']);
-
-            // Accumulate the total for the sale
-            $sumTotal += $item['total'];
-        }
-
-        // Create a single sale record with sum_total and payment method
-        Sales::create([
-            'sum_total' => $sumTotal, // Save the accumulated sum_total for the transaction
-            'payment_method' => $data['payment_method'], // Payment method for the whole sale
-            'items' => ($data['items']), // Save all items as JSON
-        ]);
-
-        // Notification after successful sale finalization
-        Notification::make()
-        ->title('Sale finalized successfully!')
-        ->success()
-        ->send();
     }
+
 
     public static function table(Table $table): Table
     {
         return $table
-            ->columns([TextColumn::make('created_at')->label('Date and Time')->searchable()->sortable()->formatStateUsing(fn($state) => Carbon::parse($state)->format('d M Y, g:i A')), TextColumn::make('sum_total')])
-            ->filters([
-                //
+            ->columns([
+                Tables\Columns\TextColumn::make('id')->label('Sale ID'),
+                Tables\Columns\TextColumn::make('created_at')->label('Date'),
+                Tables\Columns\TextColumn::make('overall_total')->label('Total Price')->money('USD'),
             ])
-            ->actions([Tables\Actions\EditAction::make()])
-            ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
+            ->actions([
+                Tables\Actions\EditAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\DeleteBulkAction::make(),
+            ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [];
     }
 
     public static function getPages(): array
@@ -185,26 +134,5 @@ class SalesResource extends Resource
             'create' => Pages\CreateSales::route('/create'),
             'edit' => Pages\EditSales::route('/{record}/edit'),
         ];
-    }
-
-    public static function handleRecordCreation(array $data): array
-    {
-        // Ensure that 'sales' key contains data from the repeater
-        if (isset($data['sales']) && is_array($data['sales'])) {
-            foreach ($data['sales'] as $sale) {
-                Sales::create([
-                    'batch_id' => $sale['batch_id'],
-                    'quantity' => $sale['quantity'],
-                    'unit_price' => $sale['unit_price'],
-                    'total' => $sale['total'],
-                    'payment_method' => $data['payment_method'], // Assuming you have a single payment method for all entries
-                ]);
-            }
-        }
-
-        // Remove 'sales' key if you don't want to save it in the main table
-        unset($data['sales']);
-
-        return $data;
     }
 }
