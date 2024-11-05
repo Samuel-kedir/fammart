@@ -17,6 +17,14 @@ class CreateSales extends CreateRecord
     protected static string $resource = SalesResource::class;
 
      
+
+     // Override the redirection URL after creation
+    protected function getRedirectUrl(): string
+    {
+        // Redirect to the Sales index page
+        return SalesResource::getUrl('index');
+    }
+    
     protected function handleRecordCreation(array $data): Model
     {
         // dd($data);
@@ -36,6 +44,7 @@ class CreateSales extends CreateRecord
         foreach ($validatedData['saleItems'] as $item) {
             $sales->saleItems()->create($item);
         }
+
         return $sales;
     }
     
