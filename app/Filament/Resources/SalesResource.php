@@ -85,8 +85,6 @@ class SalesResource extends Resource
     // Helper function to set overall price
     private static function setOverallPrice(Get $get, Set $set): void
     {
-        // $overallPrice = collect($get('saleItems'))->sum(fn($item) => $item['item_total'] ?? 0);
-        // $set('overall_price', $overallPrice);
 
         // Retrieve all selected products and remove empty rows
         $selectedProducts = collect($get('saleItems'))->filter(fn($item) => !empty($item['product_id']) && !empty($item['quantity']));
@@ -112,13 +110,24 @@ class SalesResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('id')->label('Sale ID'),
                 Tables\Columns\TextColumn::make('created_at')->label('Date'),
-                Tables\Columns\TextColumn::make('overall_total')->label('Total Price')->money('USD'),
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
+                Tables\Columns\TextColumn::make('sum_total')->label('Total Price')->money('USD'),
+            ]) ->actions([
+            // Remove the edit action and add a custom view action
+                Tables\Actions\Action::make('view')
+                    ->label('View')
+                    ->icon('heroicon-o-eye')
+                    ->modalHeading('Sale Details')
+                    ->modalWidth('2xl')
+                    ->action(function ($record, $set) {
+                        // You can load the sale and its related sale items here
+                        $saleItems = $record->saleItems()->get();
+
+                        // Set the data to display in the modal
+                        $set('saleItems', $saleItems);
+                    })
+                    ->modalContent(function ($record) {
+                        return view('filament.modals.sales-detail-modal', ['saleItems' => $record->saleItems]);
+                    }),
             ]);
     }
 
