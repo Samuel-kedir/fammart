@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\PurchaseItem;
 use App\Models\Sales;
 use Filament\Forms;
+use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -26,6 +27,8 @@ class SalesResource extends Resource
     {
         return $form
             ->schema([
+                Grid::make(1)->schema([
+
                 Repeater::make('saleItems')
                     ->live()
                     ->schema([
@@ -96,7 +99,8 @@ class SalesResource extends Resource
                         self::setOverallPrice($get, $set);
                     }),
 
-                TextInput::make('overall_price')
+                
+                ]),TextInput::make('overall_price')
                     ->label('Total Price')
                     ->numeric()
                     ->disabled()
