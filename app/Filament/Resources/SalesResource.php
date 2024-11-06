@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\SalesResource\Pages;
 use App\Models\Product;
+use App\Models\PurchaseItem;
 use App\Models\Sales;
 use Filament\Forms;
 use Filament\Forms\Components\Repeater;
@@ -30,21 +31,38 @@ class SalesResource extends Resource
                     ->schema([
                         Select::make('product_id')
                             ->label('Product')
-                            ->options(Product::all()->pluck('name', 'id'))
+                            ->options(function () {
+                                // Retrieve PurchaseItems with products, including expiration date in the label
+                                return PurchaseItem::with('product')
+                                    ->get()
+                                    ->mapWithKeys(function ($purchaseItem) {
+                                        $productName = $purchaseItem->product->name ?? 'Unknown Product';
+                                        $productSize = $purchaseItem->product->size ?? 'Unknown Size';
+                                        $expiryDate = $purchaseItem->expiry_date ?? 'No Expiry Date'; // Adjust the field name as necessary
+                                        $label = "{$productName} - {$productSize} -  {$expiryDate}";
+                                        return [$purchaseItem->id => $label];
+                                    });
+                            })
                             ->searchable()
                             ->reactive()
                             ->afterStateUpdated(function ($state, callable $set, $get) {
-                                $product = Product::find($state);
-                                $price = $product ? $product->price : 0;
+                                // Fetch the selected PurchaseItem with its related product
+                                $purchaseItem = PurchaseItem::with('product')->find($state);
+
+                                // Retrieve the product price if available, else default to 0
+                                $price = $purchaseItem ? $purchaseItem->sale_price : 0;
                                 $set('price', $price);
+
+                                // Calculate item total based on the current quantity
                                 $quantity = $get('quantity') ?? 0;
                                 $itemTotal = $price * $quantity;
                                 $set('item_total', $itemTotal);
-                                // self::setOverallPrice($set, $get);
                             })
                             ->required(),
 
-                        TextInput::make('price')
+
+                        
+                            TextInput::make('price')
                             ->label('Price')
                             ->numeric()
                             ->disabled()
@@ -60,6 +78,11 @@ class SalesResource extends Resource
                                 $itemTotal = $price * $state;
                                 $set('item_total', $itemTotal);
                                 // self::setOverallPrice($get, $set);
+                            })
+                            ->maxValue(function ($get) {
+                                $productId = $get('product_id');
+                                $purchaseItem = PurchaseItem::where('product_id', $productId)->first();
+                                return $purchaseItem ? $purchaseItem->quantity : 0;
                             }),
 
                         TextInput::make('item_total')
@@ -90,7 +113,7 @@ class SalesResource extends Resource
         $selectedProducts = collect($get('saleItems'))->filter(fn($item) => !empty($item['product_id']) && !empty($item['quantity']));
     
         // Retrieve prices for all selected products
-        $prices = Product::find($selectedProducts->pluck('product_id'))->pluck('price', 'id');
+        $prices = PurchaseItem::find($selectedProducts->pluck('product_id'))->pluck('sale_price', 'id');
     
         // Calculate subtotal based on the selected products and quantities
         $subtotal = $selectedProducts->reduce(function ($subtotal, $product) use ($prices) {

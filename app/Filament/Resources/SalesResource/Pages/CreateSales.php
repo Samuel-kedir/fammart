@@ -4,6 +4,7 @@ namespace App\Filament\Resources\SalesResource\Pages;
 
 use App\Filament\Resources\SalesResource;
 use App\Models\Product;
+use App\Models\PurchaseItem;
 use App\Models\Sales;
 use App\Models\SalesItem;
 use Filament\Actions;
@@ -24,7 +25,7 @@ class CreateSales extends CreateRecord
         // Redirect to the Sales index page
         return SalesResource::getUrl('index');
     }
-    
+
     protected function handleRecordCreation(array $data): Model
     {
         // dd($data);
@@ -53,9 +54,9 @@ class CreateSales extends CreateRecord
         // Calculate overall total before saving
         // dd('Sales form data before creation:', $data['saleItems']);
         foreach($data['saleItems'] as $key=>$sales_item){
-            $product=Product::find($sales_item['product_id']);
-            $data['saleItems'][$key]['price']=$product->price;
-            $data['saleItems'][$key]['item_total']=(float)$product->price * (int)$sales_item['quantity'] ;
+            $product=PurchaseItem::find($sales_item['product_id']);
+            $data['saleItems'][$key]['price']=$product->sale_price;
+            $data['saleItems'][$key]['item_total']=(float)$product->sale_price * (int)$sales_item['quantity'] ;
         };
         $data['sum_total'] = collect($data['saleItems'] ?? [])->sum(fn($item) => $item['price'] * $item['quantity']);
         return $data;

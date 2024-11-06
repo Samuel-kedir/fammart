@@ -8,6 +8,7 @@ class PurchaseItem extends Model
 {
     protected $fillable = [
         'purchase_price',
+        'sale_price',
         'expire_date',
         'quantity',
         'product_id',

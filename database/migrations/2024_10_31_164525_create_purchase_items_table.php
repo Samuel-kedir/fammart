@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('product_id')->constrained('products', 'id')->nullable()->onDelete('cascade');
             $table->float('purchase_price');
-            $table->string('expire_date');
+            $table->float('sale_price')->nullable();
+            $table->string('expiry_date');
             $table->string('quantity');
             $table->timestamps();
         });
