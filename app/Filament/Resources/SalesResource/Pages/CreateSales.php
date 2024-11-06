@@ -41,6 +41,7 @@ class CreateSales extends CreateRecord
         $sales = Sales::create([
             // Add other fields for the Sales model here if needed
             'sum_total' => array_sum(array_column($validatedData['saleItems'], 'item_total')), // Calculate the overall total
+            'payment_method' => $data['payment_method'],
         ]);
         foreach ($validatedData['saleItems'] as $item) {
             $sales->saleItems()->create($item);

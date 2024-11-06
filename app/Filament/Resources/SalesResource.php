@@ -100,12 +100,26 @@ class SalesResource extends Resource
                     }),
 
                 
-                ]),TextInput::make('overall_price')
+                ]),
+                TextInput::make('overall_price')
                     ->label('Total Price')
                     ->numeric()
                     ->disabled()
                     ->default(0)
                     ->reactive(),
+                Grid::make(2)->schema([
+                    // Adding sum total field at the end of the repeater
+
+                    // Adding payment fields
+                    Select::make('payment_method')
+                        ->label('Payment Method')
+                        ->options([
+                            'cash' => 'Cash',
+                            'bank_transfer' => 'Bank Deposit',
+                            'pos' => 'POS',
+                        ])
+                        ->required(),
+                ]),
             ]);
     }
 
