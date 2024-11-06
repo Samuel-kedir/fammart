@@ -10,6 +10,7 @@ use App\Models\SalesItem;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -38,16 +39,30 @@ class CreateSales extends CreateRecord
             'saleItems.*.item_total' => 'nullable|numeric',
         ])->validate();
 
-        $sales = Sales::create([
-            // Add other fields for the Sales model here if needed
-            'sum_total' => array_sum(array_column($validatedData['saleItems'], 'item_total')), // Calculate the overall total
-            'payment_method' => $data['payment_method'],
-        ]);
-        foreach ($validatedData['saleItems'] as $item) {
-            $sales->saleItems()->create($item);
-        }
+        DB::beginTransaction();
+        try{
+            $sales = Sales::create([
+                // Add other fields for the Sales model here if needed
+                'sum_total' => array_sum(array_column($validatedData['saleItems'], 'item_total')), // Calculate the overall total
+                'payment_method' => $data['payment_method'],
+            ]);
+            foreach ($validatedData['saleItems'] as $item) {
+                $sales->saleItems()->create($item);
 
-        return $sales;
+                $purchase=PurchaseItem::where('id',$item['product_id'])->first();
+
+                $purchase->quantity=(float)$purchase->quantity - (float)$item["quantity"];
+                $purchase->save();
+            }
+
+            DB::commit();
+
+            return $sales;
+        }catch(\Exception $exception){
+            DB::rollBack();
+            dump($exception);
+            return NULL;
+        }
     }
     
     protected function mutateFormDataBeforeCreate(array $data): array
