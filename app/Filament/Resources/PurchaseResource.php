@@ -87,7 +87,7 @@ class PurchaseResource extends Resource
                     //             ])
                     //             ->createOptionUsing(fn (array $data) => Product::create($data)) // Create product on submission
                     //             ->columnSpan(3),
-                    DatePicker::make('expire_date')
+                    DatePicker::make('expiry_date')
                         ->label('EXP Date')
                         ->placeholder('eg. 250 ml')
                         ->required()
