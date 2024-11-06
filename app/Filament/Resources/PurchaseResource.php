@@ -100,6 +100,14 @@ class PurchaseResource extends Resource
                     TextInput::make('purchase_price')->required()->numeric()
                         ->columnSpan(3)
                         ->prefix('ETB')
+                        ->extraAttributes(['style' => 'text-align: right; width: 100%;'])
+                        ->afterStateUpdated(function (callable $set, $state, $get) {
+                            $set('sale_price',$state);
+                            }),
+                    TextInput::make('sale_price')->numeric()
+                        ->columnSpan(3)
+                        ->live()
+                        ->prefix('ETB')
                         ->extraAttributes(['style' => 'text-align: right; width: 100%;']),
                 ]),
 
@@ -119,8 +127,14 @@ class PurchaseResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->columns([
-                //
+            ->columns([                 
+                Tables\Columns\TextColumn::make('id')->label('Item id'),
+                Tables\Columns\TextColumn::make('product.name')
+                                            ->label('Product Name')
+                                            ->sortable()  // Optional: Allow sorting by product name
+                                            ->searchable(), // Optional: Make the column searchable   
+                Tables\Columns\TextColumn::make('purchase_price')->label('Purchase Price'),
+                Tables\Columns\TextColumn::make('expiry_date')->sortable()->label('EXP-Date'), 
             ])
             ->filters([
                 //
