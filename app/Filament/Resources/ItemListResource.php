@@ -45,22 +45,19 @@ class ItemListResource extends Resource
                 ->schema([
                     TextInput::make('name')->required()
                     ->autofocus()
-                    ->columnSpan(3),
+                    ->columnSpan(4),
                     TextInput::make('size')
                         ->label('Size')
                         ->placeholder('eg. 250 ml')
                         ->required()
                         ->columnSpan(3),
-                    TextInput::make('price')->required()->numeric()
-                        ->columnSpan(3)
-                        ->prefix('ETB')
-                        ->extraAttributes(['style' => 'text-align: right; width: 100%;']),
+
                     Textarea::make('description')
-                    ->columnSpan(3)
+                    ->columnSpan(5)
                     ->rows(1)
                 ])
 
-                ->extraAttributes(['style' => 'display: flex; gap: 10px; align-items: center; justify-content: space-between']),
+                ->extraAttributes(['style' => 'display: flex;  align-items: center; justify-content: space-between']),
 
 
                 Forms\Components\View::make('components.item-list')
@@ -86,9 +83,7 @@ class ItemListResource extends Resource
                 TextColumn::make('size')
                 ->sortable()
                 ->searchable(),
-                TextColumn::make('price')
-                ->sortable()
-                ->searchable()
+
             ])
 
             ->filters([
