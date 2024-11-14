@@ -76,6 +76,7 @@ class SalesResource extends Resource
                             ->numeric()
                             ->required()
                             ->reactive()
+                            ->debounce('600ms')
                             ->afterStateUpdated(function ($state, callable $set, $get) {
                                 $price = $get('price');
                                 $itemTotal = $price * $state;
