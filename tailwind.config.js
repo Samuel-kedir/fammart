@@ -4,6 +4,7 @@ export default {
         "./resources/**/*.blade.php",
         "./resources/**/*.js",
         "./resources/**/*.vue",
+        "<path-to-vendor>/awcodes/filament-table-repeater/resources/**/*.blade.php",
     ],
     theme: {
         extend: {},

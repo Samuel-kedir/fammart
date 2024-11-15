@@ -27,6 +27,10 @@ class PurchaseResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?string $label = 'Purchase';
+
+    protected static ?string $navigationLabel = 'Purchase';
+
     private $products;
 
     // public function mount()
@@ -81,26 +85,26 @@ class PurchaseResource extends Resource
                         ->label('EXP Date')
                         ->placeholder('eg. 250 ml')
                         ->required()
-                        ->columnSpan(3),
+                        ->columnSpan(2),
                     TextInput::make('quantity')
                         ->label('Quantity')
                         ->numeric()
                         ->required()
-                        ->columnSpan(3),
+                        ->columnSpan(2),
                     TextInput::make('purchase_price')->required()->numeric()
-                        ->columnSpan(3)
+                        ->columnSpan(2)
                         ->prefix('ETB')
                         ->extraAttributes(['style' => 'text-align: right; width: 100%;']),
                         // ->afterStateUpdated(function (callable $set, $state, $get) {
                         //     $set('sale_price',$state);
                         //     }),
                     TextInput::make('sale_price')->numeric()
-                        ->columnSpan(3)
+                        ->columnSpan(2)
                         ->live()
-                        ->required()
                         ->prefix('ETB')
                         ->extraAttributes(['style' => 'text-align: right; width: 100%;']),
                 ]),
+
 
                 // ->extraAttributes(['style' => 'display: flex; gap: 10px; align-items: center; justify-content: space-between']),
 
@@ -108,28 +112,82 @@ class PurchaseResource extends Resource
                 Forms\Components\View::make('components.purchase-list')
                     ->label('Purchased Items')
                     ->viewData([
-                        'products' => PurchaseItem::with('product')->orderBy('updated_at','desc')->get(), // Fetch all products
+                        'products' => PurchaseItem::with('product')->orderBy('created_at','desc')->get(), // Fetch all products
                     ])->extraAttributes(['class'=>'w-[100vw]'])
 
 
-            ]);
+                    ]);
+
     }
+
+    public static function afterCreate($record)
+{
+    // Check if the item already exists with the same product_id and expiry_date
+    $existingItem = PurchaseItem::where('product_id', $record->product_id)
+        ->where('expiry_date', $record->expiry_date)
+        ->first();
+
+    if ($existingItem) {
+        // Add the quantity to the existing item
+        $existingItem->quantity += $record->quantity;
+        $existingItem->save();
+
+        // Delete the newly created record to avoid duplication
+        $record->delete();
+    }
+}
+
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('id')->label('Item id'),
+                Tables\Columns\TextColumn::make('created_at')->label('Purchase Date')->date('d M Y')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('product.name')
                                             ->label('Product Name')
                                             ->sortable()  // Optional: Allow sorting by product name
                                             ->searchable(), // Optional: Make the column searchable
+                Tables\Columns\TextColumn::make('quantity')->label('Quantity'),
                 Tables\Columns\TextColumn::make('purchase_price')->label('Purchase Price'),
-                Tables\Columns\TextColumn::make('expiry_date')->sortable()->label('EXP-Date'),
+                Tables\Columns\TextColumn::make('sale_price')->label('Selling Price'),
+                Tables\Columns\TextColumn::make('expiry_date')->sortable()->label('EXP-Date')->searchable()->date('d M Y'),
             ])
             ->filters([
-                //
+                // Filter for Expiry Date
+                Tables\Filters\Filter::make('expiry_date')
+                    ->label('Expiry Date') // Label for the entire filter
+                    ->form([
+                        Forms\Components\Group::make([
+                            Forms\Components\DatePicker::make('from')
+                                ->label('Expiry From'), // Individual label
+                            Forms\Components\DatePicker::make('to')
+                                ->label('Expiry To'),
+                        ])
+                    ])
+                    ->query(function ($query, array $data) {
+                        return $query
+                            ->when($data['from'], fn ($query, $date) => $query->whereDate('expiry_date', '>=', $date))
+                            ->when($data['to'], fn ($query, $date) => $query->whereDate('expiry_date', '<=', $date));
+                    }),
+
+                // Filter for Purchase Date
+                Tables\Filters\Filter::make('purchase_date')
+                    ->label('Purchase Date') // Label for the entire filter
+                    ->form([
+                        Forms\Components\Group::make([
+                            Forms\Components\DatePicker::make('from')
+                                ->label('Purchase From'), // Individual label
+                            Forms\Components\DatePicker::make('to')
+                                ->label('Purchase To'),
+                        ])
+                    ])
+                    ->query(function ($query, array $data) {
+                        return $query
+                            ->when($data['from'], fn ($query, $date) => $query->whereDate('created_at', '>=', $date))
+                            ->when($data['to'], fn ($query, $date) => $query->whereDate('created_at', '<=', $date));
+                    }),
             ])
+
             ->actions([
                 Tables\Actions\EditAction::make(),
             ])
