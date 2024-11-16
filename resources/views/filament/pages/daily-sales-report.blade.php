@@ -7,18 +7,17 @@
     </div>
 
     <!-- Date Picker to select the date -->
-    <div class="w-1/2 mb-6">
+    {{-- <div class="w-1/2 mb-6">
         <label for="date" class="block mb-2 text-lg font-medium text-gray-700">Select Date:</label>
         <input type="date" id="date" wire:model="selectedDate" class="block w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-    </div>
+    </div> --}}
 
     <!-- Sales Table -->
     <div class="overflow-hidden bg-white rounded-lg shadow">
         <div class="text-lg text-gray-600">
-            <p>Selected Date: {{ $selectedDate }}</p>
+            <p>Today's Date: {{ $selectedDate }}</p>
         </div>
 
-        {{$this->table}}
     </div>
 
     <!-- Total Sales -->
@@ -41,5 +40,8 @@
             @endforeach
         </ul>
     </div>
+
+    {{$this->table}}
+
 
 </div>
