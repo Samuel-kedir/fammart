@@ -28,29 +28,50 @@ class PurchaseReport extends Page implements HasTable
                     ->sortable(),
 
                 TextColumn::make('product.name')
-                    ->label('Product Name'),
+                    ->label('Product Name')
+                    ->sortable()
+                    ->searchable(),
+                TextColumn::make('expiry_date')->sortable(),
 
-                TextColumn::make('quantity')
-                    ->label('Purchased Quantity'),
-
-                TextColumn::make('purchase_price')
-                    ->label('Purchase Price'),
-
-                // Show the count of SalesItem entries for this product
-                TextColumn::make('sales_item_count')
+                TextColumn::make('purchased_quantity')
+                    ->label('Purchased Quantity')
+                    ->getStateUsing(function ($record) {
+                        $soldQuantity = $this->getSoldQuantity($record->product_id); // Get sold quantity
+                        return $record->quantity + $soldQuantity; // Purchased quantity = original quantity + sold quantity
+                    }),
+                    // Show the count of SalesItem entries for this product
+                    TextColumn::make('sales_item_count')
                     ->label('Sales Item Count')
                     ->getStateUsing(function ($record) {
                         return $this->salesItemCount($record->product_id);
                     }),
 
+                TextColumn::make('sold_quantity')
+                ->label('Sold Quantity')
+                ->getStateUsing(function (PurchaseItem $record) {
+                    return $this->getSoldQuantity($record->product_id);
+                }),
+
+
+                TextColumn::make('quantity')
+                    ->label('Remaining Quantity'),
+
+                TextColumn::make('purchase_price')
+                    ->label('Purchase Price'),
+
+                // Show the count of SalesItem entries for this product
+
+
+
+
                 // Remaining Quantity (Purchased Quantity - Sold Quantity)
-                TextColumn::make('remaining_quantity')
-                    ->label('Remaining Quantity')
-                    ->getStateUsing(function ($record) {
-                        $purchasedQuantity = $record->quantity;
-                        $soldQuantity = SalesItem::where('product_id', $record->product_id)->sum('quantity');
-                        return $purchasedQuantity - $soldQuantity;
-                    }),
+                // TextColumn::make('remaining_quantity')
+                //     ->label('Remaining Quantity')
+                //     ->getStateUsing(function ($record) {
+                //         $purchasedQuantity = $record->quantity;
+                //         $soldQuantity = SalesItem::where('product_id', $record->product_id)->sum('quantity');
+                //         return $purchasedQuantity - $soldQuantity;
+                //     }),
 
                 // Total Sales Income
                 TextColumn::make('total_sales_income')
@@ -73,6 +94,13 @@ class PurchaseReport extends Page implements HasTable
     {
         return SalesItem::where('product_id', $productId)->count();
     }
+
+    public function getSoldQuantity($productId)
+    {
+        // Summing up all sold quantities for the given product_id in the SalesItem table
+        return SalesItem::where('product_id', $productId)->sum('quantity');
+    }
+
 
     // Helper method to calculate total sales income for a product
     public function calculateTotalSalesIncome($productId)
