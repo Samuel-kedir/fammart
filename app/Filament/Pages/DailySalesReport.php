@@ -2,6 +2,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Sales;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Carbon\Carbon;
 use Filament\Pages\Page;
 use Filament\Tables\Columns\TextColumn;
@@ -20,6 +21,9 @@ class DailySalesReport extends Page implements HasTable
 
     public $selectedDate;
     public $data;
+    
+    // restrict access for sale
+    use HasPageShield;
 
     public function table(Table $table): Table
     {

@@ -32,6 +32,12 @@ class PurchaseResource extends Resource
     protected static ?string $navigationLabel = 'Purchase';
 
     private $products;
+    // restrict access for sale
+            public static function canViewAny(): bool
+        {
+            return auth()->user()?->hasRole('super_admin');
+        }
+
 
     // public function mount()
     // {

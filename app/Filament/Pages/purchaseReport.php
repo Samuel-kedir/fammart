@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\PurchaseItem;
 use App\Models\SalesItem;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 use Filament\Pages\Page;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -18,6 +19,11 @@ class PurchaseReport extends Page implements HasTable
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static string $view = 'filament.pages.purchase-report';
 
+    
+    // restrict access for sale
+    
+    // restrict access for sale
+    use HasPageShield;
     public function table(Table $table): Table
     {
         return $table

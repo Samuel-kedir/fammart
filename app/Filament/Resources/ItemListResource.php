@@ -35,6 +35,12 @@ class ItemListResource extends Resource
 
     protected static ?string $label = 'Item';
 
+    
+    // restrict access for sale
+            public static function canViewAny(): bool
+        {
+            return auth()->user()?->hasRole('super_admin');
+        }
 
 
 

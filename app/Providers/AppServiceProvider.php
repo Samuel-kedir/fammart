@@ -22,11 +22,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Filament::serving(function () {
-            Filament::registerNavigationItems([\Filament\Navigation\NavigationItem::make('Create Sales')
-            ->url(route('filament.admin.resources.sales.create'))
-            ->group('Sales')
-            ->icon('heroicon-o-plus')]);
-        });
+        // Filament::serving(function () {
+        //     Filament::registerNavigationItems([\Filament\Navigation\NavigationItem::make('Create Sales')
+        //     ->url(route('filament.admin.resources.sales.create'))
+        //     ->group('Sales')
+        //     ->icon('heroicon-o-plus')]);
+        // });
     }
 }
