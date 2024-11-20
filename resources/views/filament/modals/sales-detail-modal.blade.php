@@ -15,13 +15,16 @@
             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
                 @foreach($saleItems as $item)
                     @php
-                        $product = $item->purchase->product ?? null;
-                        $pur = App\Models\PurchaseItem::find($item->product_id);
-                        $pro = App\Models\Product::find($pur->product_id);
+                        $purchase_id = $item->purchase->id;
+                        $product = App\Models\PurchaseItem::with('product')->find($purchase_id)->product->name;
+                        // $pur = App\Models\PurchaseItem::find($item->product_id);
+                        // $pro = App\Models\Product::find($pur->product_id);
+
                     @endphp
                     <tr>
                         <td class="px-6 py-4 text-sm text-gray-900 whitespace-nowrap dark:text-gray-100">
-                           {{$pro->name}}
+                            {{$product}}
+
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-900 whitespace-nowrap dark:text-gray-100">{{ $item->quantity }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900 whitespace-nowrap dark:text-gray-100">{{ number_format($item->price, 2) }} ETB</td>
@@ -34,8 +37,16 @@
 
     <div class="mt-8">
         <div class="flex items-center justify-between text-lg font-semibold text-gray-800 dark:text-gray-200">
-            <span>Total Price:</span>
+            <span>Sub Total:</span>
             <span class="text-xl font-bold text-gray-900 dark:text-white">{{ number_format($record->sum_total, 2) }} ETB</span>
+        </div>
+        <div class="flex items-center justify-between text-lg font-semibold text-gray-800 dark:text-gray-200">
+            <span>Discount:</span>
+            <span class="text-xl font-bold text-gray-900 dark:text-white">{{ number_format($record->discount, 2) }} ETB</span>
+        </div>
+        <div class="flex items-center justify-between text-lg font-semibold text-gray-800 dark:text-gray-200">
+            <span>Total:</span>
+            <span class="text-xl font-bold text-gray-900 dark:text-white">{{ number_format($record->sum_total - $record->discount, 2) }} ETB</span>
         </div>
         <div class="flex items-center justify-between mt-4 text-lg font-semibold text-gray-800 dark:text-gray-200">
             <span>Payment Method:</span>

@@ -37,7 +37,7 @@ class SalesResource extends Resource
                     ->live()
 
                     ->schema([
-                        Select::make('product_id')
+                        Select::make('purchase_id')
                             ->label('Product')
                             ->options(function () {
                                 // Retrieve PurchaseItems with products, including expiration date in the label
@@ -166,14 +166,14 @@ class SalesResource extends Resource
     {
 
         // Retrieve all selected products and remove empty rows
-        $selectedProducts = collect($get('saleItems'))->filter(fn($item) => !empty($item['product_id']) && !empty($item['quantity']));
+        $selectedProducts = collect($get('saleItems'))->filter(fn($item) => !empty($item['purchase_id']) && !empty($item['quantity']));
 
         // Retrieve prices for all selected products
-        $prices = PurchaseItem::find($selectedProducts->pluck('product_id'))->pluck('sale_price', 'id');
+        $prices = PurchaseItem::find($selectedProducts->pluck('purchase_id'))->pluck('sale_price', 'id');
 
         // Calculate subtotal based on the selected products and quantities
         $subtotal = $selectedProducts->reduce(function ($subtotal, $product) use ($prices) {
-            return $subtotal + ($prices[$product['product_id']] * $product['quantity']);
+            return $subtotal + ($prices[$product['purchase_id']] * $product['quantity']);
         }, 0);
         $discount = $get('discount') ?? 0;
 

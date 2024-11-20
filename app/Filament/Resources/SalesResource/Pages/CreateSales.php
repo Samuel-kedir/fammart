@@ -33,7 +33,7 @@ class CreateSales extends CreateRecord
         // Validate incoming data
         $validatedData = Validator::make($data, [
             'saleItems' => 'required|array',
-            'saleItems.*.product_id' => 'required|exists:products,id',
+            'saleItems.*.purchase_id' => 'required|exists:purchase_items,id',
             'saleItems.*.price' => 'nullable|numeric',
             'saleItems.*.quantity' => 'required|numeric',
             'saleItems.*.item_total' => 'nullable|numeric',
@@ -51,7 +51,7 @@ class CreateSales extends CreateRecord
             foreach ($validatedData['saleItems'] as $item) {
                 $sales->saleItems()->create($item);
 
-                $purchase=PurchaseItem::where('id',$item['product_id'])->first();
+                $purchase=PurchaseItem::where('id',$item['purchase_id'])->first();
 
                 $purchase->quantity=(float)$purchase->quantity - (float)$item["quantity"];
                 $purchase->save();
@@ -72,7 +72,7 @@ class CreateSales extends CreateRecord
         // Calculate overall total before saving
         // dd('Sales form data before creation:', $data['saleItems']);
         foreach($data['saleItems'] as $key=>$sales_item){
-            $product=PurchaseItem::find($sales_item['product_id']);
+            $product=PurchaseItem::find($sales_item['purchase_id']);
             $data['saleItems'][$key]['price']=$product->sale_price;
             $data['saleItems'][$key]['item_total']=(float)$product->sale_price * (int)$sales_item['quantity'] ;
         };

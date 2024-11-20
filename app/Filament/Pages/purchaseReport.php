@@ -31,99 +31,88 @@ class PurchaseReport extends Page implements HasTable
                     ->label('Product Name')
                     ->sortable()
                     ->searchable(),
+
                 TextColumn::make('expiry_date')->sortable(),
 
-                TextColumn::make('purchased_quantity')
-                    ->label('Purchased Quantity')
-                    ->getStateUsing(function ($record) {
-                        $soldQuantity = $this->getSoldQuantity($record->product_id); // Get sold quantity
-                        return $record->quantity + $soldQuantity; // Purchased quantity = original quantity + sold quantity
-                    }),
-                    // Show the count of SalesItem entries for this product
-                    TextColumn::make('sales_item_count')
-                    ->label('Sales Item Count')
-                    ->getStateUsing(function ($record) {
-                        return $this->salesItemCount($record->product_id);
+                // Purchase Quantity (Remaining Quantity + Sold Quantity)
+                TextColumn::make('purchase_quantity')
+                    ->label('Purchase Quantity')
+                    ->getStateUsing(function (PurchaseItem $record) {
+                        return $this->getSoldQuantity($record->id) + ($record->quantity);
                     }),
 
-                TextColumn::make('sold_quantity')
-                ->label('Sold Quantity')
-                ->getStateUsing(function (PurchaseItem $record) {
-                    return $this->getSoldQuantity($record->product_id);
-                }),
-
-
-                TextColumn::make('quantity')
-                    ->label('Remaining Quantity'),
-
+                // Purchase Unit Price
                 TextColumn::make('purchase_price')
-                    ->label('Purchase Price'),
+                    ->label('Purchase Unit Price'),
 
-                // Show the count of SalesItem entries for this product
-
-
-
-
-                // Remaining Quantity (Purchased Quantity - Sold Quantity)
-                // TextColumn::make('remaining_quantity')
-                //     ->label('Remaining Quantity')
-                //     ->getStateUsing(function ($record) {
-                //         $purchasedQuantity = $record->quantity;
-                //         $soldQuantity = SalesItem::where('product_id', $record->product_id)->sum('quantity');
-                //         return $purchasedQuantity - $soldQuantity;
-                //     }),
-
-                // Total Sales Income
-                TextColumn::make('total_sales_income')
-                    ->label('Total Sales Income')
-                    ->getStateUsing(function ($record) {
-                        return $this->calculateTotalSalesIncome($record->product_id);
+                // Purchase Total Price (Purchase Quantity * Purchase Price)
+                TextColumn::make('purchase_total_price')
+                    ->label('Purchase Total Price')
+                    ->getStateUsing(function (PurchaseItem $record) {
+                        return ($record->quantity + $this->getSoldQuantity($record->id) )* $record->purchase_price;
                     }),
 
-                // Total Profit
-                TextColumn::make('total_profit')
-                    ->label('Total Profit')
-                    ->getStateUsing(function ($record) {
-                        return $this->calculateTotalProfit($record->product_id, $record->purchase_price);
+                // Sales Quantity
+                TextColumn::make('sales_quantity')
+                    ->label('Sales Quantity')
+                    ->getStateUsing(function (PurchaseItem $record) {
+                        return $this->getSoldQuantity($record->id);
                     }),
-            ]);
+
+                // Sales Unit Price (If different for the same purchase, else use purchase sale_price)
+                TextColumn::make('sales_unit_price')
+                    ->label('Sales Unit Price')
+                    ->getStateUsing(function (PurchaseItem $record) {
+                        return $this->getSalesPriceOrDefault($record);
+                    }),
+
+                // Sales Total Price (Sales Quantity * Sales Unit Price)
+                TextColumn::make('sales_total_price')
+                    ->label('Sales Total Price')
+                    ->getStateUsing(function (PurchaseItem $record) {
+                        $salesQuantity = $this->getSoldQuantity($record->id);
+                        $salesUnitPrice = $this->getSalesPriceOrDefault($record);
+                        return $salesQuantity * $salesUnitPrice;
+                    }),
+
+                // Remaining Quantity (Purchase Quantity - Sales Quantity)
+                TextColumn::make('remaining_quantity')
+                    ->label('Remaining Quantity')
+                    ->getStateUsing(function (PurchaseItem $record) {
+                        return $record->quantity ;
+                    }),
+
+                // Price (Last Sale Price or Default to Purchase Sale Price)
+                TextColumn::make('price')
+                    ->label('Price (Last Sale Price)')
+                    ->getStateUsing(function (PurchaseItem $record) {
+                        return $this->getSalesPriceOrDefault($record);
+                    }),
+
+                // Total Remaining (Remaining Quantity * Last Sale Price)
+                TextColumn::make('total_remaining')
+                    ->label('Total Remaining')
+                    ->getStateUsing(function (PurchaseItem $record) {
+                        $remainingQuantity = $record->quantity;
+                        $lastSalePrice = $this->getSalesPriceOrDefault($record);
+                        return $remainingQuantity * $lastSalePrice;
+                    }),
+                ]);
     }
 
-    // Helper method to count sales for a specific product
-    public function salesItemCount($productId)
+    // Helper method to get sold quantity for a specific purchase
+    public function getSoldQuantity($purchaseId)
     {
-        return SalesItem::where('product_id', $productId)->count();
+        return SalesItem::where('purchase_id', $purchaseId)->sum('quantity');
     }
 
-    public function getSoldQuantity($productId)
+    // Helper method to get the latest sale price or use the purchase sale price if not sold
+    public function getSalesPriceOrDefault(PurchaseItem $record)
     {
-        // Summing up all sold quantities for the given product_id in the SalesItem table
-        return SalesItem::where('product_id', $productId)->sum('quantity');
-    }
+        // Check if there are any sales records, if so return the latest sale price
+        $latestSalePrice = SalesItem::where('purchase_id', $record->id)->latest('created_at')->value('price');
 
-
-    // Helper method to calculate total sales income for a product
-    public function calculateTotalSalesIncome($productId)
-    {
-        $totalIncome = SalesItem::where('product_id', $productId)
-            ->get()
-            ->sum(function ($salesItem) {
-                return $salesItem->quantity * $salesItem->price;
-            });
-
-        return $totalIncome;
-    }
-
-    // Helper method to calculate total profit for a product
-    public function calculateTotalProfit($productId, $purchasePrice)
-    {
-        // Get sold quantity for the product
-        $soldQuantity = SalesItem::where('product_id', $productId)->sum('quantity');
-
-        // Calculate total sales income for the product
-        $totalSalesIncome = $this->calculateTotalSalesIncome($productId);
-
-        // Calculate the profit (Sales Income - (Purchase Price * Sold Quantity))
-        return $totalSalesIncome - ($purchasePrice * $soldQuantity);
+        // If no sale exists, return the purchase sale price
+        return $latestSalePrice ?? $record->sale_price;
     }
 }
