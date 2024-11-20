@@ -13,6 +13,10 @@ class EditPurchase extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('save_changes')
+            ->label('Save Changes')
+            ->action(fn () => $this->save()) // Calls the save method to update the record
+            ->color('primary'),
             Actions\DeleteAction::make(),
         ];
     }

@@ -18,7 +18,7 @@ class CreateSales extends CreateRecord
 {
     protected static string $resource = SalesResource::class;
 
-     
+
 
      // Override the redirection URL after creation
     protected function getRedirectUrl(): string
@@ -64,7 +64,7 @@ class CreateSales extends CreateRecord
             return NULL;
         }
     }
-    
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         // Calculate overall total before saving
