@@ -72,9 +72,6 @@ class SalesResource extends Resource
                                 $set('item_total', $itemTotal);
                             })
                             ->required(),
-
-
-
                             TextInput::make('price')
                             ->label('Price')
                             ->numeric()
@@ -87,7 +84,7 @@ class SalesResource extends Resource
                             //     // Use the row-specific placeholder value
                             //     return $get('quantity_placeholder') ?? 'Enter quantity';
                             // })
-                            ->debounce(1000)
+                            ->debounce(600  )
                             ->numeric()
                             ->required()
                             // ->reactive()
@@ -111,17 +108,13 @@ class SalesResource extends Resource
                     ->columns(4)
                     ->afterStateUpdated(function (Get $get, Set $set){
                         self::setOverallPrice($get, $set);
+
                     }),
 
 
                 ]),
-                TextInput::make('overall_price')
-                    ->label('Total Price')
-                    ->numeric()
-                    ->disabled()
-                    ->default(0)
-                    ->reactive(),
-                Grid::make(2)->schema([
+
+                Grid::make(4)->schema([
                     // Adding sum total field at the end of the repeater
 
                     // Adding payment fields
@@ -133,7 +126,38 @@ class SalesResource extends Resource
                             'pos' => 'POS',
                         ])
                         ->required(),
+                    TextInput::make('phone')
+                    ->label('Customer Phone Number'),
+
+                    TextInput::make('discount')
+                    ->label('Discount')
+                    ->numeric()
+                    ->reactive()
+                    ->debounce(600)
+                    ->afterStateUpdated(function ($state, callable $set, $get) {
+                        $total = $get('Total');
+                        $discount = $state;
+                        $set('Total',$total-$discount);
+                    }),
+
+
+                    TextInput::make('overall_price')
+                    ->label('Sub Total')
+                    ->numeric()
+                    ->disabled()
+                    ->default(0)
+                    ->reactive(),
+
+
+                    TextInput::make('Total')
+                        ->label('Total')
+                        ->numeric()
+                        ->disabled()
+                        ->columnSpan(1)
+                        ->extraAttributes(['class' => 'self-end']),
+
                 ]),
+               // Adjust grid classes and alignment
             ]);
     }
 
@@ -151,9 +175,11 @@ class SalesResource extends Resource
         $subtotal = $selectedProducts->reduce(function ($subtotal, $product) use ($prices) {
             return $subtotal + ($prices[$product['product_id']] * $product['quantity']);
         }, 0);
+        $discount = $get('discount') ?? 0;
 
         // Update the state with the new values
         $set('overall_price', number_format($subtotal, 2, '.', ''));
+        $set('Total',$subtotal-$discount);
         // $set('total', number_format($subtotal + ($subtotal * ($get('taxes') / 100)), 2, '.', ''));
 
     }

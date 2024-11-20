@@ -13,12 +13,11 @@ class Sales extends Model
     protected $fillable = [
         'sum_total',
         'payment_method',
-        'items'
+        'phone',
+        'discount'
     ];
 
-    protected $casts = [
-        'items'=>'json'
-    ];
+
 
     public function batch()
     {

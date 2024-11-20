@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->decimal('sum_total', 10, 2);
             $table->enum('payment_method', ['cash', 'bank_transfer','pos']);
-            $table->JSON('items')->nullable();
+            $table->string('phone')->nullable();
+            $table->decimal('discount')->nullable();
             $table->timestamps();
         });
     }
