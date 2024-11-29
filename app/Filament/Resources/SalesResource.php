@@ -133,12 +133,14 @@ class SalesResource extends Resource
                     ->label('Discount')
                     ->numeric()
                     ->reactive()
-                    ->debounce(600)
+                    ->debounce(300)
                     ->afterStateUpdated(function ($state, callable $set, $get) {
-                        $total = $get('Total');
-                        $discount = $state;
-                        $set('Total',$total-$discount);
+                        $subtotal = $get('overall_price'); // Use the original subtotal
+                        $discount = $state ?? 0; // Ensure a valid discount value
+                        $total = $subtotal - $discount; // Calculate the total after applying the discount
+                        $set('Total', $total); // Update the Total field
                     }),
+
 
 
                     TextInput::make('overall_price')
@@ -164,25 +166,18 @@ class SalesResource extends Resource
     // Helper function to set overall price
     private static function setOverallPrice(Get $get, Set $set): void
     {
-
-        // Retrieve all selected products and remove empty rows
         $selectedProducts = collect($get('saleItems'))->filter(fn($item) => !empty($item['purchase_id']) && !empty($item['quantity']));
-
-        // Retrieve prices for all selected products
         $prices = PurchaseItem::find($selectedProducts->pluck('purchase_id'))->pluck('sale_price', 'id');
 
-        // Calculate subtotal based on the selected products and quantities
         $subtotal = $selectedProducts->reduce(function ($subtotal, $product) use ($prices) {
             return $subtotal + ($prices[$product['purchase_id']] * $product['quantity']);
         }, 0);
+
+        $set('overall_price', number_format($subtotal, 2, '.', '')); // Keep this as the fixed subtotal
         $discount = $get('discount') ?? 0;
-
-        // Update the state with the new values
-        $set('overall_price', number_format($subtotal, 2, '.', ''));
-        $set('Total',$subtotal-$discount);
-        // $set('total', number_format($subtotal + ($subtotal * ($get('taxes') / 100)), 2, '.', ''));
-
+        $set('Total', $subtotal - $discount); // Total is recalculated dynamically
     }
+
 
 
     public static function table(Table $table): Table
