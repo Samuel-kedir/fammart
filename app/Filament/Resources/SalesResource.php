@@ -32,134 +32,125 @@ class SalesResource extends Resource
         return $form
             ->schema([
                 Grid::make(1)->schema([
-
-                TableRepeater::make('saleItems')
-                    ->live()
-
-                    ->schema([
-                        Select::make('purchase_id')
-                            ->label('Product')
-                            ->options(function () {
-                                // Retrieve PurchaseItems with products, including expiration date in the label
-                                return PurchaseItem::with('product')
-                                    ->get()
-                                    ->mapWithKeys(function ($purchaseItem) {
-                                        $productName = $purchaseItem->product->name ?? 'Unknown Product';
-                                        $productSize = $purchaseItem->product->size ?? 'Unknown Size';
-                                        $expiryDate = $purchaseItem->expiry_date
-                                        ? Carbon::parse($purchaseItem->expiry_date)->format('d M Y')
-                                        : 'No Expiry Date';  // Adjust the field name as necessary
-                                        $label = "{$productName} - {$productSize} -  {$expiryDate}";
-                                        return [$purchaseItem->id => $label];
-                                    });
-                            })
-                            ->searchable()
-                            ->reactive()
-                            ->afterStateUpdated(function ($state, callable $set, $get) {
-                                // Fetch the selected PurchaseItem with its related product
-                                $purchaseItem = PurchaseItem::with('product')->find($state);
-
-                                // Retrieve the product price if available, else default to 0
-                                $price = $purchaseItem ? $purchaseItem->sale_price : 0;
-                                $quantity = $purchaseItem ? $purchaseItem->quantity : 0;
-                                $set('price', $price);
-                                // $set('quantity_placeholder', $quantity);
-                                $set('max_quantity', $quantity);
-
-                                // Calculate item total based on the current quantity
-                                $quantity = $get('quantity') ?? 0;
-                                $itemTotal = $price * $quantity;
-                                $set('item_total', $itemTotal);
-                            })
-                            ->required(),
-                            TextInput::make('price')
-                            ->label('Price')
-                            ->numeric()
-                            ->disabled()
-                            ->required(),
-
-                            TextInput::make('quantity')
-                            ->label('Quantity')
-                            // ->placeholder(function ($get) {
-                            //     // Use the row-specific placeholder value
-                            //     return $get('quantity_placeholder') ?? 'Enter quantity';
-                            // })
-                            ->debounce(600  )
-                            ->numeric()
-                            ->required()
-                            // ->reactive()
-                            ->afterStateUpdated(function ($state, callable $set, $get) {
-                                $price = $get('price');
-                                $itemTotal = $price * $state;
-                                $set('item_total', $itemTotal);
-                            })
-                            ->maxValue(function ($get) {
-                                // Dynamically set the max value based on the available quantity
-                                return $get('max_quantity') ?? 250;
-                            }),
-
-
-                        TextInput::make('item_total')
-                            ->label('Item Total')
-                            ->numeric()
-                            ->disabled()
-                            ->required(),
-                    ])
-                    ->columns(4)
-                    ->afterStateUpdated(function (Get $get, Set $set){
-                        self::setOverallPrice($get, $set);
-
-                    }),
-
-
-                ]),
-
-                Grid::make(4)->schema([
-                    // Adding sum total field at the end of the repeater
-
-                    // Adding payment fields
-                    Select::make('payment_method')
-                        ->label('Payment Method')
-                        ->options([
-                            'cash' => 'Cash',
-                            'bank_transfer' => 'Bank Deposit',
-                            'pos' => 'POS',
-                        ])
-                        ->required(),
-                    TextInput::make('phone')
-                    ->label('Customer Phone Number'),
-
-                    TextInput::make('discount')
-                    ->label('Discount')
-                    ->numeric()
-                    ->reactive()
-                    ->debounce(300)
-                    ->afterStateUpdated(function ($state, callable $set, $get) {
-                        $subtotal = $get('overall_price'); // Use the original subtotal
-                        $discount = $state ?? 0; // Ensure a valid discount value
-                        $total = $subtotal - $discount; // Calculate the total after applying the discount
-                        $set('Total', $total); // Update the Total field
-                    }),
-
-
-
-                    TextInput::make('overall_price')
-                    ->label('Sub Total')
-                    ->numeric()
-                    ->disabled()
-                    ->default(0)
-                    ->reactive(),
-
-
-                    TextInput::make('Total')
-                        ->label('Total')
+                    // Customer Phone Number Field
+                    TextInput::make('customer_phone')
+                        ->label('Customer Phone Number')
+                        ->required()
+                        ->placeholder('Enter customer phone number')
                         ->numeric()
-                        ->disabled()
-                        ->columnSpan(1)
-                        ->extraAttributes(['class' => 'self-end']),
+                        ->maxLength(15)
+                        ->extraAttributes(['style' => 'width: 40%;']),
 
-                ]),
-               // Adjust grid classes and alignment
+                    // TableRepeater for sale items
+                    TableRepeater::make('saleItems')
+                        ->live()
+                        ->schema([
+                            Select::make('purchase_id')
+                                ->label('Product')
+                                ->options(function () {
+                                    return PurchaseItem::with('product')
+                                        ->get()
+                                        ->mapWithKeys(function ($purchaseItem) {
+                                            $productName = $purchaseItem->product->name ?? 'Unknown Product';
+                                            $productSize = $purchaseItem->product->size ?? 'Unknown Size';
+                                            $expiryDate = $purchaseItem->expiry_date
+                                                ? Carbon::parse($purchaseItem->expiry_date)->format('d M Y')
+                                                : 'No Expiry Date';
+                                            $label = "{$productName} - {$productSize} -  {$expiryDate}";
+                                            return [$purchaseItem->id => $label];
+                                        });
+                                })
+                                ->searchable()
+                                ->reactive()
+                                ->afterStateUpdated(function ($state, callable $set, $get) {
+                                    $purchaseItem = PurchaseItem::with('product')->find($state);
+                                    $price = $purchaseItem ? $purchaseItem->sale_price : 0;
+                                    $quantity = $purchaseItem ? $purchaseItem->quantity : 0;
+                                    $set('price', $price);
+                                    $set('max_quantity', $quantity);
+                                    $itemTotal = $price * ($get('quantity') ?? 0);
+                                    $set('item_total', $itemTotal);
+                                })
+                                ->required(),
+                            TextInput::make('price')
+                                ->label('Price')
+                                ->numeric()
+                                ->disabled()
+                                ->required(),
+                            TextInput::make('quantity')
+                                ->label('Quantity')
+                                ->debounce(600)
+                                ->numeric()
+                                ->required()
+                                ->afterStateUpdated(function ($state, callable $set, $get) {
+                                    $price = $get('price');
+                                    $itemTotal = $price * $state;
+                                    $set('item_total', $itemTotal);
+                                })
+                                ->maxValue(function ($get) {
+                                    return $get('max_quantity') ?? 250;
+                                }),
+                            TextInput::make('item_total')
+                                ->label('Item Total')
+                                ->numeric()
+                                ->disabled()
+                                ->required(),
+                        ])
+                        ->columns(4)
+                        ->afterStateUpdated(function (Get $get, Set $set) {
+                            self::setOverallPrice($get, $set);
+                        }),
+
+                    // Two columns below the form (Payment Method and Totals)
+                    Grid::make(2)
+                    ->schema([
+                        // Left column for Payment Method
+
+                        Select::make('payment_method')
+                            ->label('Payment Method')
+                            ->options([
+                                'cash' => 'Cash',
+                                'credit_card' => 'Credit Card',
+                                'mobile_payment' => 'Mobile Payment',
+                            ])
+                            ->required()
+                            ->columnSpan(1)
+                            ->extraAttributes(['style'=>'width: 80%']),
+
+
+
+                        // Right column for Subtotal, Discount, and Total
+                        Grid::make(1)->schema([
+                            TextInput::make('overall_price')
+                                ->inlineLabel('Subtotal')
+                                ->numeric()
+                                ->disabled()
+                                ->required(),
+                            TextInput::make('discount')
+                                ->inlinelabel('Discount')
+                                ->numeric()
+                                ->reactive()
+                                ->debounce(600)
+                                ->afterStateUpdated(function ($state, callable $set, $get) {
+                                    $subtotal = $get('overall_price');
+                                    $discount = $state;
+                                    $set('Total', $subtotal - $discount);
+                                }),
+                            TextInput::make('Total')
+                                ->inlineLabel('Total')
+                                ->numeric()
+                                ->disabled()
+                                ->required(),
+                        ])
+                            ->columnSpan(1)
+                            ->extraAttributes(['style' => ' width: 80%; align-items: flex-end;'])
+                            ->extraAttributes(['class' => 'ml-auto']) // Ensures fields stack vertically
+                            // ->class('pt-4'), // Optional padding for spacing
+                    ])
+                        ->extraAttributes(['style','justify-content: space-between; space']), // Optional gap between columns
+                ])
+
+
             ]);
     }
 
