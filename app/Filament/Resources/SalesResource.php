@@ -33,9 +33,10 @@ class SalesResource extends Resource
             ->schema([
                 Grid::make(1)->schema([
                     // Customer Phone Number Field
-                    TextInput::make('customer_phone')
+                    TextInput::make('phone')
                         ->label('Customer Phone Number')
-                        ->required()
+                        ->type('tel')
+                        // ->regex('/^\+?[0-9]{1,4}?[-.\s]?[0-9]+[-.\s]?[0-9]+[-.\s]?[0-9]+$/')
                         ->placeholder('Enter customer phone number')
                         ->numeric()
                         ->maxLength(15)
@@ -72,14 +73,10 @@ class SalesResource extends Resource
                                     $set('item_total', $itemTotal);
                                 })
                                 ->required(),
-                            TextInput::make('price')
-                                ->label('Price')
-                                ->numeric()
-                                ->disabled()
-                                ->required(),
+
                             TextInput::make('quantity')
                                 ->label('Quantity')
-                                ->debounce(600)
+                                ->debounce(600 )
                                 ->numeric()
                                 ->required()
                                 ->afterStateUpdated(function ($state, callable $set, $get) {
@@ -90,12 +87,20 @@ class SalesResource extends Resource
                                 ->maxValue(function ($get) {
                                     return $get('max_quantity') ?? 250;
                                 }),
+                            TextInput::make('price')
+                                ->label('Price')
+                                ->numeric()
+                                ->disabled()
+                                ->required(),
                             TextInput::make('item_total')
                                 ->label('Item Total')
                                 ->numeric()
                                 ->disabled()
                                 ->required(),
                         ])
+                        // ->colStyles([
+                        //     'price'=>'color:#0000ff'
+                        // ])
                         ->columns(4)
                         ->afterStateUpdated(function (Get $get, Set $set) {
                             self::setOverallPrice($get, $set);
@@ -105,18 +110,83 @@ class SalesResource extends Resource
                     Grid::make(2)
                     ->schema([
                         // Left column for Payment Method
+                        Grid::make(1)->schema([
+                            Select::make('payment_method')
+                                ->label('Payment Method')
+                                ->options([
+                                    'cash' => 'Cash',
+                                    'bank_transfer' => 'Bank Transfer',
+                                    'pos' => 'POS',
+                                    'cash_pos' => 'Cash and POS',
+                                    'cash_bank' => 'Cash and Bank Transfer',
+                                    'pos_bank' => 'POS and Bank Transfer',
+                                ])
+                                ->required()
+                                ->reactive()
+                                ->columnSpan(1)
+                                ->extraAttributes(['style'=>'width: 80%'])
+                                ->afterStateUpdated(function ($state,$get, callable $set) {
 
-                        Select::make('payment_method')
-                            ->label('Payment Method')
-                            ->options([
-                                'cash' => 'Cash',
-                                'credit_card' => 'Credit Card',
-                                'mobile_payment' => 'Mobile Payment',
-                            ])
-                            ->required()
-                            ->columnSpan(1)
-                            ->extraAttributes(['style'=>'width: 80%']),
+                                    if($get('cash')!= null){
+                                        if($get('payment_method') === 'cash_bank' ){
+                                            $bankPayment = $get('Total') - $get('cash');
+                                            $set('bank_transfer', $bankPayment);
+                                        }else if($get('payment_method') === 'cash_pos'){
+                                            $posPayment = $get('Total') - $get('cash');
+                                            $set('pos', $posPayment);
+                                        }
+                                    }
+                                    if ($state === 'cash_bank' ) {
+                                        $set('cash_visible', true);
+                                        $set('bank_visible', true);
+                                        $set('pos', null);
 
+
+                                    }else if($state === 'cash_pos'){
+                                        $set('cash_visible', true);
+                                        $set('pos_visible', true);
+                                        $set('bank', null);
+
+                                    }
+
+
+                                }),
+
+                            TextInput::make('cash')
+                                ->numeric()
+                                ->extraAttributes(['style' => 'width: 80%'])
+                                ->reactive()
+                                ->debounce(600)
+                                ->visible(fn(callable $get)=> ($get('payment_method') === 'cash_bank' || $get('payment_method') === 'cash_pos'))
+                                ->afterStateUpdated(function ($state,$get, callable $set) {
+                                    if($get('payment_method') === 'cash_bank' ){
+                                        $bankPayment = $get('Total') - $state;
+                                        $set('bank_transfer', $bankPayment);
+                                    }else if($get('payment_method') === 'cash_pos'){
+                                        $posPayment = $get('Total') - $state;
+                                        $set('pos', $posPayment);
+                                    }
+
+                                }),
+
+                            TextInput::make('pos')
+                                ->disabled(fn ($get) => $get('payment_method') === 'cash')
+                                ->numeric()
+                                ->extraAttributes(['style' => 'width: 80%'])
+                                ->disabled()
+                                ->visible(fn(callable $get)=> $get('payment_method') === 'cash_pos'),
+
+                            TextInput::make('bank_transfer')
+                                ->numeric()
+                                ->extraAttributes(['style' => 'width: 80%'])
+                                ->visible(false)
+                                ->disabled()
+                                ->visible(fn(callable $get)=> $get('payment_method') === 'cash_bank'),
+
+
+
+
+                        ])->columnSpan(1),
 
 
                         // Right column for Subtotal, Discount, and Total

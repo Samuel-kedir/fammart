@@ -11,20 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sales', function (Blueprint $table) {
+        Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->decimal('sum_total', 10, 2);
-            $table->enum('payment_method', ['cash', 'bank_transfer','pos','cash_pos','cash_bank','pos_bank']);
-            $table->string('phone')->nullable();
-            $table->decimal('discount')->nullable();
+            $table->foreignId('sales_id')->constrained('sales')->onDelete('cascade');
+            $table->string('payment_option');
+            $table->decimal('amount', 10, 2);
             $table->timestamps();
         });
+
     }
+
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('sales');
+        Schema::dropIfExists('payment_options');
     }
 };
