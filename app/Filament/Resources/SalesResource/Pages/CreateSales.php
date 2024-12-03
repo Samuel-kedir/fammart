@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\SalesResource\Pages;
 
 use App\Filament\Resources\SalesResource;
+use App\Models\PaymentOption;
 use App\Models\Product;
 use App\Models\PurchaseItem;
 use App\Models\Sales;
@@ -30,6 +31,7 @@ class CreateSales extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         // dd($data);
+        // return $data;
         // Validate incoming data
         $validatedData = Validator::make($data, [
             'saleItems' => 'required|array',
@@ -48,6 +50,51 @@ class CreateSales extends CreateRecord
                 'phone'=>$data['phone'],
                 'discount'=>(float)$data['discount'],
             ]);
+
+            if($data['payment_method']=="cash_pos"){
+
+
+                $pos_amount = $data['total']-$data['cash'];
+
+                    PaymentOption::create([
+                        'sales_id' => $sales->id,
+                        'payment_option' => 'pos',
+                        'amount'=> $pos_amount,
+                    ]);
+            }else if ($data['payment_method']=="cash_bank"){
+                $bank_amount = $data['total']-$data['cash'];
+                PaymentOption::create([
+                    'sales_id' => $sales->id,
+                    'payment_option' => 'bank',
+                    'amount'=> $bank_amount,
+                ]);
+            }
+
+
+
+            if(isset($data['cash'])){
+                PaymentOption::create([
+                    'sales_id' => $sales->id,
+                    'payment_option' => 'cash',
+                    'amount'=> $data['cash'],
+                ]);
+            }
+
+            if(isset($data['bank_transfer'])){
+            PaymentOption::create([
+                'sales_id' => $sales->id,
+                'payment_option' => 'bank',
+                'amount'=> $data['bank_transfer'],
+            ]);
+
+        };
+
+            if(isset($data['pos'])){
+            PaymentOption::create([
+                'sales_id' => $sales->id,
+                'payment_option' => 'pos',
+                'amount'=> $data['pos'],
+            ]);};
             foreach ($validatedData['saleItems'] as $item) {
                 $sales->saleItems()->create($item);
 
@@ -69,6 +116,7 @@ class CreateSales extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        // dd($data);
         // Calculate overall total before saving
         // dd('Sales form data before creation:', $data['saleItems']);
         foreach($data['saleItems'] as $key=>$sales_item){
@@ -77,6 +125,7 @@ class CreateSales extends CreateRecord
             $data['saleItems'][$key]['item_total']=(float)$product->sale_price * (int)$sales_item['quantity'] ;
         };
         $data['sum_total'] = collect($data['saleItems'] ?? [])->sum(fn($item) => $item['price'] * $item['quantity']);
+        $data['total']= $data['sum_total'] - $data['discount'];
         return $data;
     }
 

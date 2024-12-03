@@ -39,7 +39,6 @@ class SalesResource extends Resource
                         // ->regex('/^\+?[0-9]{1,4}?[-.\s]?[0-9]+[-.\s]?[0-9]+[-.\s]?[0-9]+$/')
                         ->placeholder('Enter customer phone number')
                         ->numeric()
-                        ->maxLength(15)
                         ->extraAttributes(['style' => 'width: 40%;']),
 
                     // TableRepeater for sale items
@@ -119,7 +118,6 @@ class SalesResource extends Resource
                                     'pos' => 'POS',
                                     'cash_pos' => 'Cash and POS',
                                     'cash_bank' => 'Cash and Bank Transfer',
-                                    'pos_bank' => 'POS and Bank Transfer',
                                 ])
                                 ->required()
                                 ->reactive()
