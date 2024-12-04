@@ -56,45 +56,55 @@ class CreateSales extends CreateRecord
 
                 $pos_amount = $data['total']-$data['cash'];
 
-                    PaymentOption::create([
-                        'sales_id' => $sales->id,
-                        'payment_option' => 'pos',
-                        'amount'=> $pos_amount,
-                    ]);
-            }else if ($data['payment_method']=="cash_bank"){
-                $bank_amount = $data['total']-$data['cash'];
-                PaymentOption::create([
-                    'sales_id' => $sales->id,
-                    'payment_option' => 'bank',
-                    'amount'=> $bank_amount,
-                ]);
-            }
-
-
-
-            if(isset($data['cash'])){
                 PaymentOption::create([
                     'sales_id' => $sales->id,
                     'payment_option' => 'cash',
                     'amount'=> $data['cash'],
                 ]);
-            }
 
-            if(isset($data['bank_transfer'])){
-            PaymentOption::create([
-                'sales_id' => $sales->id,
-                'payment_option' => 'bank',
-                'amount'=> $data['bank_transfer'],
-            ]);
+                    PaymentOption::create([
+                        'sales_id' => $sales->id,
+                        'payment_option' => 'POS',
+                        'amount'=> $pos_amount,
+                    ]);
+            }else if ($data['payment_method']=="cash_bank"){
+                $bank_amount = $data['total']-$data['cash'];
 
-        };
+                PaymentOption::create([
+                    'sales_id' => $sales->id,
+                    'payment_option' => 'Cash',
+                    'amount'=> $data['cash'],
+                ]);
+                PaymentOption::create([
+                    'sales_id' => $sales->id,
+                    'payment_option' => 'Bank',
+                    'amount'=> $bank_amount,
+                ]);
+            } else if ($data['payment_method']=="cash"){
+                PaymentOption::create([
+                    'sales_id'=>$sales->id,
+                    'payment_option' => 'Cash',
+                    'amount'=> $data['total'],
+                ]);
+            } else if ($data['payment_method']=="bank_transfer"){
+                PaymentOption::create([
+                    'sales_id'=>$sales->id,
+                    'payment_option' => 'Bank',
+                    'amount'=> $data['total'],
+                ]);
+            } else if ($data['payment_method']=="pos"){
+                    PaymentOption::create([
+                        'sales_id'=>$sales->id,
+                        'payment_option' => 'POS',
+                        'amount'=> $data['total'],
+                    ]); }
 
-            if(isset($data['pos'])){
-            PaymentOption::create([
-                'sales_id' => $sales->id,
-                'payment_option' => 'pos',
-                'amount'=> $data['pos'],
-            ]);};
+
+
+
+
+
+
             foreach ($validatedData['saleItems'] as $item) {
                 $sales->saleItems()->create($item);
 

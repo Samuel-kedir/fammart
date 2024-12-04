@@ -324,7 +324,6 @@ class SalesResource extends Resource
                         }
                     }
                 }),
-
                 // Filter for payment method with "All" option
                 Filter::make('payment_method')
                     ->label('Payment Method')
