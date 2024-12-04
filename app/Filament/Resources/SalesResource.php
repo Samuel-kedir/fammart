@@ -246,7 +246,14 @@ class SalesResource extends Resource
                 Tables\Columns\TextColumn::make('id')->label('Sale ID'),
                 Tables\Columns\TextColumn::make('created_at')->label('Date')->date('d M Y')->sortable()->searchable(),
                 Tables\Columns\TextColumn::make('payment_method')->label('payment method')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('sum_total')->label('Total Price')->money('ETB')->sortable()->searchable(),
+                // Tables\Columns\TextColumn::make('sum_total')->label('Total Price')->money('ETB')->sortable()->searchable(),
+                Tables\Columns\TextColumn::make('sum_total')
+                ->searchable()
+                ->sortable()
+                ->summarize([
+                    Tables\Columns\Summarizers\Sum::make()
+                        ->money(),
+                ]),
             ])
             ->actions([
                 // Remove the edit action and add a custom view action
@@ -265,6 +272,11 @@ class SalesResource extends Resource
                     ->modalContent(function ($record) {
                         return view('filament.modals.sales-detail-modal', ['saleItems' => $record->saleItems, 'record'=> $record]);
                     }),
+                ])
+            ->groups([
+                    Tables\Grouping\Group::make('payment_method')
+                        ->label('Payment Method')
+                        ->collapsible(),
                 ])
             ->filters([
                 Filter::make('date')
