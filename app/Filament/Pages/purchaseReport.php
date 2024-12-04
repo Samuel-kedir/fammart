@@ -4,17 +4,23 @@ namespace App\Filament\Pages;
 
 use App\Models\PurchaseItem;
 use App\Models\SalesItem;
+use Filament\Facades\Filament;
 use Filament\Pages\Page;
+use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 
 class PurchaseReport extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    public $name = 'Purchase Report';
+    public $name = 'Inventory Report';
+    protected static ?string $navigationGroup = 'Reports';
+    protected static ?string $navigationLabel = 'Inventory Report';
+    protected static ?string $title = 'Inventory Report';
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static string $view = 'filament.pages.purchase-report';
 
@@ -76,8 +82,11 @@ class PurchaseReport extends Page implements HasTable
                     }),
 
                 // Remaining Quantity (Purchase Quantity - Sales Quantity)
-                TextColumn::make('remaining_quantity')
+                TextColumn::make('quantity')
                     ->label('Remaining Quantity')
+                    ->summarize([
+                        Sum::make()
+                    ])
                     ->getStateUsing(function (PurchaseItem $record) {
                         return $record->quantity ;
                     }),
@@ -91,13 +100,17 @@ class PurchaseReport extends Page implements HasTable
 
                 // Total Remaining (Remaining Quantity * Last Sale Price)
                 TextColumn::make('total_remaining')
-                    ->label('Total Remaining')
+                    ->label('Total Remaining Price')
                     ->getStateUsing(function (PurchaseItem $record) {
                         $remainingQuantity = $record->quantity;
                         $lastSalePrice = $this->getSalesPriceOrDefault($record);
                         return $remainingQuantity * $lastSalePrice;
                     }),
-                ]);
+                ])->groups([
+                    Group::make('product.name')
+                        ->label('Product Name')
+                        ->collapsible(),
+                ]) ;
     }
 
     // Helper method to get sold quantity for a specific purchase

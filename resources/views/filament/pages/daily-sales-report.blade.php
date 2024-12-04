@@ -6,6 +6,9 @@
         <div class="w-full h-px mt-4 bg-gray-300"></div>
     </div>
 
+    {{$this->table}}
+
+
     <!-- Date Picker to select the date -->
     {{-- <div class="w-1/2 mb-6">
         <label for="date" class="block mb-2 text-lg font-medium text-gray-700">Select Date:</label>
@@ -41,7 +44,6 @@
         </ul>
     </div>
 
-    {{$this->table}}
 
 
 </div>

@@ -16,6 +16,9 @@ class DailySalesReport extends Page implements HasTable
     protected static ?string $title = 'Daily Sales Report';
     protected static string $view = 'filament.pages.daily-sales-report';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static bool $isNavigationHidden = true;
+    protected static ?string $navigation = null;
+
 
 
     public $selectedDate;

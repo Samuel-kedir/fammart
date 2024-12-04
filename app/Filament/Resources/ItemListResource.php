@@ -27,11 +27,11 @@ class ItemListResource extends Resource
 
     protected static string $view = '../../resources/views/filament/item-list-page';
 
-    protected static ?string $navigationLabel = 'Item'; // Set this to a suitable label
+    protected static ?string $navigationLabel = 'Item List'; // Set this to a suitable label
 
     protected static string $formName = 'create';
 
-    protected static ?string $title = 'Item';
+    protected static ?string $title = 'Item List';
 
     protected static ?string $label = 'Item';
 

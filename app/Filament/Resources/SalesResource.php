@@ -26,6 +26,9 @@ class SalesResource extends Resource
 {
     protected static ?string $model = Sales::class;
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Reports';
+    protected static ?string $navigationLabel = 'Sales Report';
+    protected static ?string $title = 'Sales Report';
 
     public static function form(Form $form): Form
     {

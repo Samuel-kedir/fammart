@@ -22,6 +22,8 @@ class PaymentOptionResource extends Resource
 {
     protected static ?string $model = PaymentOption::class;
     protected static ?string $title = 'Payment Report';
+    protected static ?string $navigationGroup = 'Reports';
+    protected static ?string $navigationLabel = 'Payment Report';
 
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
