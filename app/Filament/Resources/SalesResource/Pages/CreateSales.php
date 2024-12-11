@@ -64,7 +64,7 @@ class CreateSales extends CreateRecord
 
                     PaymentOption::create([
                         'sales_id' => $sales->id,
-                        'payment_option' => 'POS',
+                        'payment_option' => 'pos',
                         'amount'=> $pos_amount,
                     ]);
             }else if ($data['payment_method']=="cash_bank"){
@@ -72,30 +72,30 @@ class CreateSales extends CreateRecord
 
                 PaymentOption::create([
                     'sales_id' => $sales->id,
-                    'payment_option' => 'Cash',
+                    'payment_option' => 'cash',
                     'amount'=> $data['cash'],
                 ]);
                 PaymentOption::create([
                     'sales_id' => $sales->id,
-                    'payment_option' => 'Bank',
+                    'payment_option' => 'bank',
                     'amount'=> $bank_amount,
                 ]);
             } else if ($data['payment_method']=="cash"){
                 PaymentOption::create([
                     'sales_id'=>$sales->id,
-                    'payment_option' => 'Cash',
+                    'payment_option' => 'cash',
                     'amount'=> $data['total'],
                 ]);
             } else if ($data['payment_method']=="bank_transfer"){
                 PaymentOption::create([
                     'sales_id'=>$sales->id,
-                    'payment_option' => 'Bank',
+                    'payment_option' => 'bank',
                     'amount'=> $data['total'],
                 ]);
             } else if ($data['payment_method']=="pos"){
                     PaymentOption::create([
                         'sales_id'=>$sales->id,
-                        'payment_option' => 'POS',
+                        'payment_option' => 'pos',
                         'amount'=> $data['total'],
                     ]); }
 

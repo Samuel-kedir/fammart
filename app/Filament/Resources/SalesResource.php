@@ -3,10 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SalesResource\Pages;
+use App\Models\PaymentOption;
 use App\Models\Product;
 use App\Models\PurchaseItem;
 use App\Models\Sales;
 use Carbon\Carbon;
+use Filament\Tables\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
@@ -259,22 +261,133 @@ class SalesResource extends Resource
                 ]),
             ])
             ->actions([
-                // Remove the edit action and add a custom view action
-                     Tables\Actions\Action::make('view')
-                    ->label('View')
-                    ->icon('heroicon-o-eye')
-                    ->modalHeading('Sale Details')
-                    ->modalWidth('2xl')
-                    ->action(function ($record, $set) {
-                        // You can load the sale and its related sale items here
-                        $saleItems = $record->saleItems()->get();
 
-                        // Set the data to display in the modal
-                        $set('saleItems', $saleItems);
-                    })
-                    ->modalContent(function ($record) {
-                        return view('filament.modals.sales-detail-modal', ['saleItems' => $record->saleItems, 'record'=> $record]);
-                    }),
+
+
+                ViewAction::make()
+                ->form([
+                    TextInput::make('phone')
+                        ->label('Customer Phone Number')
+                        ->disabled(),
+
+                    Repeater::make('saleItems')
+                        ->schema([
+                            TextInput::make('product_name')
+                                ->label('Product Name')
+                                ->disabled(),
+                            TextInput::make('quantity')
+                                ->label('Quantity')
+                                ->numeric()
+                                ->disabled(),
+                            TextInput::make('price')
+                                ->label('Price')
+                                ->numeric()
+                                ->disabled(),
+                            TextInput::make('item_total')
+                                ->label('Item Total')
+                                ->numeric()
+                                ->disabled(),
+                        ])
+                        ->columns(4)
+                        ->disabled(),
+
+                    Grid::make(4)
+                        ->schema([
+                            TextInput::make('payment_method')
+                                ->label('Payment Method')
+                                ->inlineLabel(false)
+                                ->extraAttributes(['style' => 'color: blue; font-size: 5rem'])
+                                ->disabled(),
+
+                            TextInput::make('sum_total')
+                                ->label('Subtotal')
+                                ->numeric()
+                                ->disabled(),
+
+                            TextInput::make('discount')
+                                ->label('Discount')
+                                ->numeric()
+                                ->disabled(),
+
+                            TextInput::make('Total')
+                                ->label('Total')
+                                ->numeric()
+                                ->disabled(),
+
+                            // Cash field
+                            TextInput::make('cash')
+                                ->label('Cash Payment')
+                                ->numeric()
+                                ->disabled()
+                                ->visible(fn ($get) => in_array($get('payment_method'), ['cash_pos', 'cash_bank'])),
+
+                            // POS field
+                            TextInput::make('pos')
+                                ->label('POS Payment')
+                                ->numeric()
+                                ->disabled()
+                                ->visible(fn ($get) => $get('payment_method') === 'cash_pos' ),
+
+                            // Bank transfer field
+                            TextInput::make('bank_transfer')
+                                ->label('Bank Transfer Payment')
+                                ->numeric()
+                                ->disabled()
+                                ->visible(fn ($get) => $get('payment_method') === 'cash_bank' ),
+                        ])
+                        ->columns(4)
+                ])
+                ->mutateRecordDataUsing(function (array $data): array {
+                    // Populate the sale items
+                    $data['saleItems'] = Sales::find($data['id'])->saleItems->map(function ($saleItem) {
+                        $product = $saleItem->purchase->product ?? null;
+
+                        return [
+                            'product_name' => $product?->name ?? 'Unknown Product',
+                            'quantity' => $saleItem->quantity,
+                            'price' => $saleItem->price,
+                            'item_total' => $saleItem->quantity * $saleItem->price,
+                        ];
+                    });
+
+                    // Populate the total
+                    $data['Total'] = ($data['sum_total'] ?? 0) - ($data['discount'] ?? 0);
+
+                    // Get payment options for this sale and set values for cash, pos, and bank_transfer
+                    $paymentOptions = PaymentOption::where('sales_id', $data['id'])->get();
+                    foreach ($paymentOptions as $paymentOption) {
+                        if ($paymentOption->payment_option === 'cash') {
+                            $data['cash'] = $paymentOption->amount;
+                        } elseif ($paymentOption->payment_option === 'pos') {
+                            $data['pos'] = $paymentOption->amount;
+                        } elseif ($paymentOption->payment_option === 'bank') {
+                            $data['bank_transfer'] = $paymentOption->amount;
+                        }
+                    }
+
+                    // If not set (i.e., no record found), default to 0
+                    $data['cash'] = $data['cash'] ?? 0;
+                    $data['pos'] = $data['pos'] ?? 0;
+                    $data['bank_transfer'] = $data['bank_transfer'] ?? 0;
+
+                    return $data;
+                }),
+                // Remove the edit action and add a custom view action
+                    //  Tables\Actions\Action::make('view')
+                    // ->label('View')
+                    // ->icon('heroicon-o-eye')
+                    // ->modalHeading('Sale Details')
+                    // ->modalWidth('2xl')
+                    // ->action(function ($record, $set) {
+                    //     // You can load the sale and its related sale items here
+                    //     $saleItems = $record->saleItems()->get();
+
+                    //     // Set the data to display in the modal
+                    //     $set('saleItems', $saleItems);
+                    // })
+                    // ->modalContent(function ($record) {
+                    //     return view('filament.modals.sales-detail-modal', ['saleItems' => $record->saleItems, 'record'=> $record]);
+                    // }),
                 ])
             ->groups([
                     Tables\Grouping\Group::make('payment_method')
@@ -337,8 +450,10 @@ class SalesResource extends Resource
                                 return [
                                     'all' => 'All', // "All" option to show all payment methods
                                     'cash' => 'Cash',
-                                    'credit_card' => 'Credit Card',
+                                    'bank' => 'Bank Transfer',
                                     'pos' => 'POS',
+                                    'cash_bank' => 'Cash and Bank Transfer',
+                                    'cash_pos' => 'Cash and POS',
                                     // Add other payment methods as necessary
                                 ];
                             })
