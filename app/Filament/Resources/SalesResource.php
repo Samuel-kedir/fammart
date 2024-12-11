@@ -20,6 +20,7 @@ use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Icetalker\FilamentTableRepeater\Forms\Components\TableRepeater;
@@ -372,6 +373,93 @@ class SalesResource extends Resource
 
                     return $data;
                 }),
+
+                EditAction::make()
+                    ->form([
+                        Grid::make(1)->schema([
+                            TextInput::make('phone')
+                                ->label('Customer Phone Number')
+                                ->type('tel')
+                                ->placeholder('Enter customer phone number')
+                                ->numeric()
+                                ->extraAttributes(['style' => 'width: 40%;']),
+
+                            TableRepeater::make('saleItems')
+                                ->schema([
+                                    TextInput::make('product_name')
+                                        ->label('Product Name')
+                                        ->disabled(),
+                                    TextInput::make('quantity')
+                                        ->label('Quantity')
+                                        ->numeric()
+                                        ->disabled(),
+                                    TextInput::make('price')
+                                        ->label('Price')
+                                        ->numeric()
+                                        ->disabled(),
+                                    TextInput::make('item_total')
+                                        ->label('Item Total')
+                                        ->numeric()
+                                        ->disabled(),
+                                ])
+                                ->columns(4)
+                                ->disabled(),
+
+                            Grid::make(4)
+                                ->schema([
+                                    Select::make('payment_method')
+                                        ->label('Payment Method')
+                                        ->options([
+                                            'cash' => 'Cash',
+                                            'bank_transfer' => 'Bank Transfer',
+                                            'pos' => 'POS',
+                                            'cash_pos' => 'Cash and POS',
+                                            'cash_bank' => 'Cash and Bank Transfer',
+                                        ])
+                                        ->disabled(),
+
+                                    TextInput::make('sum_total')
+                                        ->label('Subtotal')
+                                        ->numeric()
+                                        ->disabled(),
+
+                                    TextInput::make('discount')
+                                        ->label('Discount')
+                                        ->numeric()
+                                        ->disabled(),
+
+                                    TextInput::make('Total')
+                                        ->label('Total')
+                                        ->numeric()
+                                        ->disabled(),
+
+                                    TextInput::make('cash')
+                                        ->label('Cash Payment')
+                                        ->numeric()
+                                        ->visible(fn ($get) => in_array($get('payment_method'), ['cash_pos', 'cash_bank']))
+                                        ->disabled(),
+
+                                    TextInput::make('pos')
+                                        ->label('POS Payment')
+                                        ->numeric()
+                                        ->visible(fn ($get) => $get('payment_method') === 'cash_pos')
+                                        ->disabled(),
+
+                                    TextInput::make('bank_transfer')
+                                        ->label('Bank Transfer Payment')
+                                        ->numeric()
+                                        ->visible(fn ($get) => $get('payment_method') === 'cash_bank')
+                                        ->disabled(),
+                                ])
+                                ->columns(2),
+                        ]),
+                    ])
+                    ->mutateFormDataUsing(function (array $data): array {
+                        $data['sub_total'] = 500;
+
+                        return $data;
+                    })
+
                 // Remove the edit action and add a custom view action
                     //  Tables\Actions\Action::make('view')
                     // ->label('View')
@@ -478,7 +566,7 @@ class SalesResource extends Resource
         return [
             'index' => Pages\ListSales::route('/'),
             'create' => Pages\CreateSales::route('/create'),
-            // 'edit' => Pages\EditSales::route('/{record}/edit'),
+            'edit' => Pages\EditSales::route('/{record}/edit'),
         ];
     }
 }

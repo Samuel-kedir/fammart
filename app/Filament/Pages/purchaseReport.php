@@ -12,10 +12,12 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
+use BezhanSalleh\FilamentShield\Traits\HasPageShield;
 
-class PurchaseReport extends Page implements HasTable
+class purchaseReport extends Page implements HasTable
 {
-    use InteractsWithTable;
+    use InteractsWithTable , HasPageShield;
+
 
     public $name = 'Inventory Report';
     protected static ?string $navigationGroup = 'Reports';
@@ -23,6 +25,8 @@ class PurchaseReport extends Page implements HasTable
     protected static ?string $title = 'Inventory Report';
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static string $view = 'filament.pages.purchase-report';
+
+
 
     public function table(Table $table): Table
     {
